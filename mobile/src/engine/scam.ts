@@ -35,7 +35,7 @@ const BRANDS: Brand[] = [
   { name: "Mon Compte Formation (CPF)", words: ["cpf", "compte formation", "moncompteformation"], lure: ["cpf", "moncompteformation", "compteformation"], domains: ["moncompteformation.gouv.fr"] },
   { name: "France Travail", words: ["france travail", "pole emploi"], lure: ["francetravail", "france-travail", "poleemploi", "pole-emploi"], domains: ["francetravail.fr", "pole-emploi.fr"] },
   { name: "l'ANTS (carte grise, permis, papiers)", words: ["ants", "carte grise", "certificat d'immatriculation", "crit'air", "vignette"], lure: ["ants", "cartegrise", "critair"], domains: ["ants.gouv.fr", "certificat-air.gouv.fr"] },
-  { name: "La Poste / Colissimo / Chronopost", words: ["la poste", "colissimo", "chronopost", "votre colis", "livraison"], lure: ["laposte", "colissimo", "chronopost"], domains: ["laposte.fr", "laposte.net", "colissimo.fr", "chronopost.fr"] },
+  { name: "La Poste / Colissimo / Chronopost", words: ["la poste", "colissimo", "chronopost", "votre colis", "livraison de votre colis", "livraison suspendue", "echec de livraison"], lure: ["laposte", "colissimo", "chronopost"], domains: ["laposte.fr", "laposte.net", "colissimo.fr", "chronopost.fr"] },
   { name: "l'Urssaf", words: ["urssaf"], lure: ["urssaf"], domains: ["urssaf.fr"] },
   { name: "l'Assurance retraite", words: ["assurance retraite", "carsat"], lure: ["lassuranceretraite", "carsat"], domains: ["lassuranceretraite.fr", "info-retraite.fr"] },
   { name: "ta banque", words: ["votre banque", "conseiller bancaire", "service fraude", "votre compte bancaire", "credit agricole", "banque postale", "bnp", "societe generale", "caisse d'epargne", "lcl", "credit mutuel"], lure: ["creditagricole", "bnp", "bnpparibas", "societegenerale", "labanquepostale", "caisseepargne", "lcl", "creditmutuel", "banquepopulaire"], domains: ["credit-agricole.fr", "labanquepostale.fr", "mabanque.bnpparibas", "bnpparibas", "societegenerale.fr", "caisse-epargne.fr", "lcl.fr", "creditmutuel.fr", "banquepopulaire.fr"] },
@@ -106,6 +106,30 @@ const BAIT = [
 const COUPONS = ["pcs", "transcash", "neosurf", "paysafecard", "bitcoin", "crypto-monnaie", "western union", "coupon recharge", "carte cadeau"];
 const PREMIUM_PHONE = /(?<!\d)08\s?9\d(?:[\s.]?\d{2}){3}(?!\d)/;
 
+function editDistance(a: string, b: string): number {
+  if (Math.abs(a.length - b.length) > 3) return 99;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/** Sur un long papier scanné, « tmpats.gouv.fi » ou « seruice-public.fr » sont l'adresse officielle mal lue
+ *  (pas un piège : les arnaques arrivent par SMS ou mail courts). */
+function misreadOfficial(domain: string): boolean {
+  if (/(?:^|\.)gouv\.[a-z]{1,3}$/.test(domain)) return true;
+  const bare = domain.replace(/^w[a-z]{1,2}\./, "");
+  return [...OTHER_OFFICIAL, ...BRANDS.flatMap((b) => b.domains)].some((d) => d.length >= 8 && editDistance(bare, d) <= 3);
+}
+
+/** Un papier long et sur plusieurs lignes (courrier, fiche, attestation), pas un message. */
+function looksLikeLongPaper(text: string): boolean {
+  return (text.match(/[A-Za-zÀ-ÿ]/g) ?? []).length > 800 && text.split("\n").length >= 10;
+}
+
 export function detectScam(text: string): ScamReport {
   const f = fold(text).replace(/\n/g, " ");
   const reasons: string[] = [];
@@ -120,13 +144,14 @@ export function detectScam(text: string): ScamReport {
   // Liens et domaines.
   const links: ScamLink[] = [];
   const seen = new Set<string>();
+  const longPaper = looksLikeLongPaper(text);
   for (const m of text.matchAll(URL)) {
     const prev = text[(m.index ?? 0) - 1];
     if (prev === "@") continue; // adresse mail
     const domain = domainOf(m[0]);
     if (!domain.includes(".") || seen.has(domain)) continue;
     seen.add(domain);
-    const official = isOfficial(domain);
+    const official = isOfficial(domain) || (longPaper && misreadOfficial(domain));
     const lure = official ? null : luredBrand(domain);
     links.push({ url: m[0], domain, official, impersonates: lure?.name ?? null });
   }

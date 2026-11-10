@@ -99,6 +99,10 @@ describe("détecteur d'arnaques", () => {
       assert.equal(r.level, "aucun", `${p.id} : ${r.reasons.join(" | ")}`);
     }
   });
+  test("un SMS court vers un faux site des impôts reste une arnaque, même s'il ressemble à une adresse mal lue", () => {
+    assert.notEqual(detectScam("Impots : remboursement de 312 EUR en attente. Confirmez sur seruice-public.fr avant ce soir.").level, "aucun");
+    assert.notEqual(detectScam("Ameli : votre carte vitale expire. Mettez a jour vos informations sur arneli.fr").level, "aucun");
+  });
   test("les adresses mail ne sont pas des liens", () => {
     assert.equal(detectScam("Écris-nous : contact@ameli-faux.com").links.length, 0);
   });

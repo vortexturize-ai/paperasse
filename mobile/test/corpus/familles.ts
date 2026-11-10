@@ -223,6 +223,7 @@ export const ENTETES: Record<string, string> = {
   tribunal: "Tribunal judiciaire de Lyon",
   education: "Académie de Lyon",
   crous: "Crous de Lyon",
+  mdph: "Maison départementale des personnes handicapées du Rhône",
 };
 
 /** Chaque organisme connu, en en-tête d'un courrier d'information, en casse normale et en majuscules. */

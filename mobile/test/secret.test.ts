@@ -78,6 +78,8 @@ test("pièce sensible : identité, banque, santé, ou numéro très personnel da
   const { isSensitivePaper } = await import("../src/engine/sensitive.ts");
   assert.equal(isSensitivePaper({ category: "identite" }), true);
   assert.equal(isSensitivePaper({ category: "factures", docType: "releve_bancaire" }), true);
+  assert.equal(isSensitivePaper({ category: "travail", docType: "fiche_de_paie", fullText: "Salaire brut 1 539,45" }), true);
+  assert.equal(isSensitivePaper({ category: "travail", docType: "attestation_employeur" }), true);
   assert.equal(isSensitivePaper({ category: "factures", fullText: "Votre IBAN : FR76 3000 6000 0112 3456 7890 189" }), true);
   assert.equal(isSensitivePaper({ category: "factures", fullText: "Facture EDF, 84,60 € à payer avant le 12 décembre." }), false);
   assert.equal(isSensitivePaper({ category: "autre", fullText: null }), false);

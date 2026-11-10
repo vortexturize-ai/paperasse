@@ -8,7 +8,7 @@ import {
 import { formatDateIn, WORDS, type Ctx, type Intent, type Lang } from "./i18n.ts";
 import { detectIssuer, guessSender, ISSUERS, type Issuer } from "./issuers.ts";
 import { parseMrz } from "./mrz.ts";
-import { after, before, cleanText, flat, fold, hasAny, lastIndexOfWord, lines, sentenceAt } from "./normalize.ts";
+import { after, before, cleanText, flat, fold, hasAny, indexOfWord, lastIndexOfWord, lines, sentenceAt } from "./normalize.ts";
 import { findReferences, type KeyFact } from "./references.ts";
 import { detectScam, type ScamReport } from "./scam.ts";
 
@@ -51,7 +51,17 @@ const DEADLINE_CUES: [string, number][] = [
 
 const EXPIRY_CUES = ["date d'expiration", "expire le", "valable jusqu'au", "date de fin de validite", "fin de validite", "valide jusqu'au", "date de validite", "valable du", "periode de validite"];
 const BIRTH_CUES = ["naissance", "ne le", "nee le", "ne(e) le", "ne (e) le", "ne a", "nee a"];
-const DOC_DATE_CUES = [", le ", "fait a", "date :", "date d'envoi", "date d'edition", "edite le", "emis le", "en date du", "date de la facture", "date de facture", "date d'emission", "date de l'avis", "date d'etablissement", "date de mise en recouvrement", "courrier du", "facture du", "delivre le", "date de delivrance", "le "];
+const DOC_DATE_CUES = [", le ", "fait a", "fait le", "date :", "date d'envoi", "date d'edition", "edite le", "emis le", "etabli le", "etablie le", "imprime le", "en date du", "date de la facture", "date de facture", "date d'emission", "date de l'avis", "date d'etablissement", "date de mise en recouvrement", "date du rapport", "realisee le", "realise le", "courrier du", "facture du", "delivre le", "date de delivrance", "le "];
+// Dates qui ne sont ni celle du papier ni une limite : un texte de loi cité (« loi n° 78-17 du 6 janvier 1978 »),
+// une embauche, une ancienneté.
+const LEGAL_REF = /(?:\b(?:loi|decret|ordonnance|arrete|directive|reglement|code)\b[^.]{0,30}|\bn° ?[\d\-./]+ )du\s*$/;
+const NOT_DOC_DATE = ["entree", "date d'entree", "anciennete", "embauche", "date d'embauche", "depuis le", "depuis"];
+// Un délai qui ne court que si quelque chose arrive (« en cas d'accident, dans les 48 heures ») : jamais une date limite.
+const EVENT_DELAY = /\b(?:en cas d'(?:accident|absence|arret|maladie|hospitalisation|changement|perte|vol|empechement)|tout accident|tout changement|a compter du jour ou|de sa delivrance|s'il est|s'il n'est|s'ils|s'elle|lorsque|lorsqu'|nonobstant)/;
+// Un délai pour contester : une vraie date, mais seulement comptée depuis la date écrite du courrier.
+const RECOURSE_DELAY = /\b(?:en cas de desaccord|si vous (?:souhaitez|le souhaitez|desirez|n'etes pas d'accord|contestez)|vous disposez|vous pouvez|recours|contester|contestation|faire appel)/;
+// Un papier sans date dont toutes les dates sont vieilles : un délai relatif ne se compte pas depuis aujourd'hui.
+const OLD_PAPER_DAYS = 120;
 
 const SEVERE = [
   "commissaire de justice", "commissaires de justice", "huissier", "saisie de vos", "saisie sur", "saisie-attribution", "saisie attribution",
@@ -67,8 +77,16 @@ const INDU = ["trop-percu", "trop percu", "indu", "vous devez rembourser", "remb
 const RDV = [
   "rendez-vous", "convocation", "vous etes convoque", "vous etes attendu", "nous vous convoquons", "entretien prealable", "audience du", "a l'audience",
 ];
-const SEND_DOC = ["pieces justificatives", "piece justificative", "justificatif", "merci de nous faire parvenir", "nous faire parvenir", "merci de nous retourner", "nous retourner", "nous adresser", "transmettre", "documents suivants", "renvoyer", "renvoyez", "retournez", "envoyez-nous", "adressez-nous", "fournir"];
-const PAY = ["a payer", "a regler", "montant du", "reste a payer", "solde du", "somme due", "regler la somme", "payer la somme", "commandement de payer"];
+// Une demande, pas un papier qui « peut valoir justificatif » ni un formulaire qui « transmet » des informations.
+const SEND_DOC = [
+  "pieces justificatives", "piece justificative", "justificatif demande", "justificatifs demandes", "justificatif suivant", "justificatifs suivants",
+  "envoyer le justificatif", "envoyer les justificatifs", "envoyer un justificatif", "demande de justificatif", "demande de justificatifs",
+  "merci de nous faire parvenir", "nous faire parvenir", "nous le faire parvenir", "nous la faire parvenir", "nous les faire parvenir", "nous envoyer", "merci de nous envoyer",
+  "merci de nous retourner", "nous retourner", "nous adresser", "nous transmettre", "merci de transmettre", "veuillez transmettre",
+  "documents suivants", "renvoyer", "renvoyez", "retournez", "envoyez-nous", "adressez-nous", "nous fournir", "a fournir", "veuillez fournir",
+  "merci de fournir", "devez fournir", "devez nous fournir",
+];
+const PAY = ["a payer", "a regler", "montant du :", "reste a payer", "solde du", "somme due", "regler la somme", "payer la somme", "commandement de payer"];
 const RIGHTS = ["vous avez droit", "notification de droits", "montant de votre aide", "vos droits", "nous vous versons", "sera verse", "attestation de droits", "vous beneficiez", "votre allocation", "bourse"];
 const AUTO_DEBIT = ["sera preleve", "seront preleve", "prelevement automatique", "preleve le", "par prelevement", "prelevement le", "preleves automatiquement", "vous etes mensualise", "mensualisation", "preleve sur votre compte", "prelevement sur votre compte", "sera prelevee le"];
 const PAID = ["paye le", "payee le", "paye par", "payee par", "deja paye", "deja regle", "reglee le", "regle le", "acquittee", "montant regle", "paiement recu", "nous avons bien recu votre paiement"];
@@ -78,13 +96,35 @@ const AFTER_DEADLINE = /^[\s,]*(?:au plus tard|dernier delai|delai de rigueur)/;
 const BETWEEN = /entre le\s.{4,30}?\set(?: le)?\s*$/;
 
 const ID_TYPES: DocType[] = ["piece_identite", "titre_de_sejour", "permis_de_conduire"];
+const EMPLOYER_PAPERS: DocType[] = ["fiche_de_paie", "attestation_employeur"];
+const SOCIAL_BODIES = ["msa", "urssaf", "francetravail", "cpam", "retraite", "dgfip", "caf"];
 const NO_TODO: DocType[] = ["fiche_de_paie", "contrat_de_travail", "cv", "diplome", "bail", "quittance_loyer", "releve_bancaire", "ordonnance", "certificat_scolarite", "attestation_employeur", "carte_grise", "ticket_garantie", "devis"];
 
 interface DatedFacts {
   docDate: string | null;
   deadline: string | null;
   deadlineQuote: string | null;
+  /** La date limite vient d'un délai (« dans les 15 jours »), pas d'une date écrite. */
+  deadlineRelative: boolean;
   expiry: string | null;
+}
+
+/** Un indice placé juste avant la date, pas au milieu d'un mot (« simple » ne contient pas « le »). */
+function cueBefore(ctx: string, cue: string): boolean {
+  let i = ctx.indexOf(cue);
+  while (i !== -1) {
+    if (!/[a-z]/.test(cue[0]) || i === 0 || !/[a-z0-9]/.test(ctx[i - 1])) return true;
+    i = ctx.indexOf(cue, i + 1);
+  }
+  return false;
+}
+
+/** La phrase repliée qui contient la position. */
+function foldedSentence(f: string, index: number): string {
+  const start = Math.max(f.lastIndexOf(". ", index), f.lastIndexOf("; ", index), index - 300);
+  let end = f.indexOf(". ", index);
+  if (end === -1 || end - index > 300) end = Math.min(f.length, index + 300);
+  return f.slice(Math.max(0, start), end);
 }
 
 function scoreCue(context: string, cues: [string, number][]): number {
@@ -105,9 +145,11 @@ interface Candidate {
 }
 
 function datedFacts(text: string, f: string, today: string, rdvLetter: boolean): DatedFacts {
-  const dates = findDates(f);
+  const legal = (d: DateMention) => LEGAL_REF.test(before(f, d.index, 50));
+  const dates = findDates(f).filter((d) => !legal(d));
   const isBirth = (i: number) => hasAny(before(f, i, 30), BIRTH_CUES);
   const isExpiry = (i: number) => hasAny(before(f, i, 40), EXPIRY_CUES);
+  const notDocDate = (i: number) => hasAny(before(f, i, 25), NOT_DOC_DATE);
 
   let expiry: string | null = null;
   for (const d of dates) if (isExpiry(d.index) && (!expiry || d.iso > expiry)) expiry = d.iso;
@@ -130,12 +172,12 @@ function datedFacts(text: string, f: string, today: string, rdvLetter: boolean):
   let likelyDeadline: DateMention | null = null;
   for (const [d, s] of scored) if (s > 2 && (!likelyDeadline || s > scored.get(likelyDeadline)!)) likelyDeadline = d;
   const plausibleDoc = (d: DateMention) =>
-    !isBirth(d.index) && !isExpiry(d.index) && d !== likelyDeadline && (scored.get(d) ?? 0) < 7 && d.iso <= today;
+    !isBirth(d.index) && !isExpiry(d.index) && !notDocDate(d.index) && d !== likelyDeadline && (scored.get(d) ?? 0) < 7 && d.iso <= today;
   let docDate: string | null = null;
   for (const d of dates) {
     if (!plausibleDoc(d)) continue;
     const ctx = before(f, d.index, 25);
-    if (DOC_DATE_CUES.some((c) => ctx.includes(c))) {
+    if (DOC_DATE_CUES.some((c) => cueBefore(ctx, c))) {
       docDate = d.iso;
       break;
     }
@@ -150,14 +192,18 @@ function datedFacts(text: string, f: string, today: string, rdvLetter: boolean):
   for (const [d, s] of scored) if (s < 8 && hasTime(d) && d.iso > (docDate ?? today)) scored.set(d, 8);
 
   // Date limite : la mieux notée, jamais avant la date du courrier ; à égalité, la plus proche.
+  // Sans date de courrier, on compte depuis aujourd'hui, sauf si toutes les dates du papier sont vieilles.
+  const newest = dates.reduce<string | null>((m, d) => (d.iso <= today && (!m || d.iso > m) ? d.iso : m), null);
+  const anchor = docDate ?? (newest && daysBetween(newest, today) > OLD_PAPER_DAYS ? null : today);
+
   const candidates: Candidate[] = [];
   for (const [d, score] of scored) if (score > 2 && (!docDate || d.iso >= docDate)) candidates.push({ iso: d.iso, index: d.index, score });
   // « avant le 27 novembre » : l'année est celle du courrier (ou la suivante).
   for (const p of findPartialDates(f)) {
-    if (isBirth(p.index)) continue;
+    if (isBirth(p.index) || !anchor) continue;
     const score = deadlineScore(p.index, p.length);
     if (score <= 2) continue;
-    const iso = docDate ? resolvePartial(p, docDate, 0) : resolvePartial(p, today, 60);
+    const iso = docDate ? resolvePartial(p, docDate, 0) : resolvePartial(p, anchor, 60);
     if (iso) candidates.push({ iso, index: p.index, score });
   }
   let best: Candidate | null = null;
@@ -165,16 +211,34 @@ function datedFacts(text: string, f: string, today: string, rdvLetter: boolean):
 
   let deadline = best?.iso ?? null;
   let quote = best ? sentenceAt(text, best.index) : null;
+  let deadlineRelative = false;
 
   // Pas de date écrite mais un délai : « dans un délai de 15 jours » à partir de la date du courrier.
-  if (!deadline) {
-    const dur = findDurations(f)[0];
-    if (dur) {
-      deadline = addDuration(docDate ?? today, dur.amount, dur.unit);
+  if (!deadline && anchor) {
+    const dur = findDurations(f).find((x) => {
+      const s = foldedSentence(f, x.index);
+      return !EVENT_DELAY.test(s) && (docDate !== null || !RECOURSE_DELAY.test(s));
+    });
+    const due = dur ? addDuration(anchor, dur.amount, dur.unit) : null;
+    // Un délai écoulé depuis des mois sur un vieux papier ne demande plus rien.
+    if (dur && due && daysBetween(due, today) <= OLD_PAPER_DAYS) {
+      deadline = due;
       quote = sentenceAt(text, dur.index);
+      deadlineRelative = true;
     }
   }
-  return { docDate, deadline, deadlineQuote: quote, expiry };
+  return { docDate, deadline, deadlineQuote: quote, deadlineRelative, expiry };
+}
+
+/** Date d'une fiche de paie : la plus récente (fin de période, paiement), jamais l'entrée ni la naissance. */
+function payslipDate(f: string, today: string): string | null {
+  let best: string | null = null;
+  for (const d of findDates(f)) {
+    const ctx = before(f, d.index, 30);
+    if (d.iso > today || hasAny(ctx, BIRTH_CUES) || hasAny(ctx, NOT_DOC_DATE) || LEGAL_REF.test(before(f, d.index, 50))) continue;
+    if (!best || d.iso > best) best = d.iso;
+  }
+  return best;
 }
 
 /** Permis de conduire européen : 4a. = délivré le, 4b. = valable jusqu'au. */
@@ -280,21 +344,37 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
     if (headerName) issuer = null;
   }
 
-  const cls = classify(f, mrz, issuer);
+  const cls = classify(f, mrz, issuer, folded);
   const type = cls.type;
   const isPayslip = type === "fiche_de_paie";
   if (!issuer && !headerName && type === "avis_imposition") issuer = DGFIP; // un avis d'impôt vient toujours des Finances publiques
+  // La MSA ou l'Urssaf citées sur une fiche de paie (cotisations, caisse) ne sont pas l'employeur.
+  if (issuer && EMPLOYER_PAPERS.includes(type) && SOCIAL_BODIES.includes(issuer.id)) {
+    const social = issuer;
+    issuer = null;
+    headerName = guessSender(textLines.filter((l) => !social.patterns.some((p) => indexOfWord(fold(l), p) !== -1)), { company: true });
+  }
 
   const rdvLetter = hasAny(f, RDV);
   const dated = datedFacts(text, f, opts.today, rdvLetter);
-  let docDate = dated.docDate;
+  // Une clause d'un contrat ou d'une attestation (« dans les 48 heures ») n'est pas une date limite.
+  if (dated.deadlineRelative && (NO_TODO.includes(type) || cls.info)) {
+    dated.deadline = null;
+    dated.deadlineQuote = null;
+  }
+  let docDate = isPayslip ? payslipDate(f, opts.today) ?? dated.docDate : dated.docDate;
   let expiry = mrz?.expiryDate ?? dated.expiry;
   if (type === "permis_de_conduire") {
     const lic = licenceDates(f);
     docDate = lic.issued ?? docDate;
     expiry = lic.expiry ?? expiry;
   }
-  const amount = isPayslip ? null : mainAmount(f, false);
+  // Une attestation pour France Travail ou un contrat listent des salaires et des taux : pas un montant du papier.
+  const listsWages = (type === "attestation_employeur" && cls.info) || type === "contrat_de_travail";
+  let amount = isPayslip || listsWages ? null : mainAmount(f, false);
+  // Le revenu fiscal de référence n'est pas une somme à payer ni à recevoir : pas de montant mis en avant.
+  if (type === "avis_imposition" && amount?.direction === "information") amount = null;
+  if (cls.info && type === "autre" && amount) amount = { ...amount, direction: "information" };
   const facts: KeyFact[] = findReferences(text, f);
 
   // Informations propres à certains papiers.
@@ -318,11 +398,12 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
   const severe = hasAny(f, SEVERE);
   const autoDebit = hasAny(f, AUTO_DEBIT);
   const paid = hasAny(f, PAID);
-  const intent = detectIntent(f, amount?.direction ?? null, dated.deadline !== null);
+  const actionable: Intent[] = ["payer", "envoyer_document", "rdv", "indu", "relance", "repondre"];
+  const detected = detectIntent(f, amount?.direction ?? null, dated.deadline !== null);
+  const intent: Intent = cls.info && actionable.includes(detected) ? "info" : detected;
   const daysLeft = dated.deadline ? daysBetween(opts.today, dated.deadline) : null;
   const expiryDays = expiry && ID_TYPES.includes(type) ? daysBetween(opts.today, expiry) : null;
 
-  const actionable: Intent[] = ["payer", "envoyer_document", "rdv", "indu", "relance", "repondre"];
   let toDo = actionable.includes(intent);
   if (NO_TODO.includes(type)) toDo = false;
   // Une facture est à traiter si elle reste à payer (pas prélevée, pas déjà réglée) ou si c'est une relance.
@@ -330,8 +411,10 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
   if (type === "amende") toDo = amount?.direction === "a_payer" || dated.deadline !== null || actionable.includes(intent);
   if (type === "avis_imposition") toDo = (amount?.direction === "a_payer" && !autoDebit) || intent === "relance";
   if (ID_TYPES.includes(type)) toDo = expiryDays !== null && expiryDays <= 180;
+  if (cls.info) toDo = false;
 
-  const sender = issuer?.name ?? headerName ?? (type === "autre" ? null : guessSender(textLines, { strict: type === "courrier_administratif" }));
+  // Un CV n'a pas d'expéditeur : la société citée est un ancien employeur.
+  const sender = type === "cv" ? null : issuer?.name ?? headerName ?? (type === "autre" && !cls.label ? null : guessSender(textLines, { strict: type === "courrier_administratif" }));
 
   const ctx: Ctx = {
     issuer: sender,
@@ -407,8 +490,8 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
   }
 
   const month = (docDate ?? opts.today).slice(0, 7);
-  const label = mrz?.kind === "passeport" ? "Passeport" : DOC_TYPES[type];
-  const titre = type === "autre" && !sender ? `${month} Papier` : `${ID_TYPES.includes(type) ? "" : `${month} `}${label}${sender ? ` – ${sender}` : ""}`;
+  const label = mrz?.kind === "passeport" ? "Passeport" : cls.label ?? DOC_TYPES[type];
+  const titre = type === "autre" && !sender && !cls.label ? `${month} Papier` : `${ID_TYPES.includes(type) ? "" : `${month} `}${label}${sender ? ` – ${sender}` : ""}`;
 
   const scam = detectScam(text);
   const warnings = uniq([
@@ -466,7 +549,7 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
     montant: mainMoney?.value ?? null,
     montant_sens: mainMoney?.direction ?? null,
     infos_cles: facts.slice(0, 10),
-    mots_cles: uniq([sender, DOC_TYPES[type], issuer?.id, severe && "urgent", intent !== "info" && intent]),
+    mots_cles: uniq([sender, DOC_TYPES[type], cls.label, issuer?.id, severe && "urgent", intent !== "info" && intent]),
     texte: text,
     avertissement: warnings.length ? warnings.join(" ") : null,
     confiance: cls.confidence,

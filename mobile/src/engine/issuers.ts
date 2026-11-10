@@ -51,6 +51,7 @@ export const ISSUERS: Issuer[] = [
   { id: "tribunal", name: "Tribunal", patterns: ["tribunal judiciaire", "tribunal de proximite", "greffe du tribunal", "tribunal d'instance"], category: "administratif" },
   { id: "education", name: "Éducation nationale", patterns: ["education nationale", "academie de", "academie d'", "rectorat"], category: "etudes" },
   { id: "crous", name: "Crous", patterns: ["crous"], category: "etudes", site: "messervices.etudiant.gouv.fr" },
+  { id: "mdph", name: "MDPH", patterns: ["maison departementale des personnes handicapees", "maison departementale de l'autonomie", "mdph", "mda"], category: "administratif" },
 ];
 
 export interface IssuerMatch {
@@ -112,7 +113,7 @@ export function detectIssuer(foldedText: string): IssuerMatch | null {
   return best ? { issuer: best.issuer, index: best.index, inHeader: best.inHeader } : null;
 }
 
-const LEGAL_FORMS = ["SA", "SAS", "SASU", "SARL", "EURL", "SCI", "SNC", "SCOP", "SELARL", "SCP", "GIE", "SCM", "EI"];
+const LEGAL_FORMS = ["SA", "SAS", "SASU", "SARL", "EURL", "SCI", "SNC", "SCOP", "SELARL", "SCP", "GIE", "SCM", "EI", "GAEC", "EARL", "SCEA", "GFA"];
 const PREPOSITIONS = new Set(["de", "du", "des", "d", "à", "a", "au", "aux", "et", "en", "sur", "sous", "pour", "par"]);
 const ARTICLES = new Set(["le", "la", "les", "l"]);
 
@@ -155,8 +156,20 @@ const NOT_A_NAME = new RegExp(
     "mise en demeure|rappel|relance|commandement|recu|ticket|decompte|echeancier|declaration|ordonnance|compte rendu|" +
     "proces-verbal|carte|permis|passeport|titre de sejour|recepisse|diplome|curriculum|offre|votre |vos |notre |nos |" +
     "n°|no |numero|reference|client|periode|montant|total|iban|siret|entre |et |je |nous |soussigne|republique|ministere|" +
-    "service |direction |agence de |accueil|identifiant|enfant|beneficiaire|salarie|locataire|patient|nom |prenom)",
+    "service |direction |agence de |accueil|identifiant|enfant|beneficiaire|salarie|locataire|patient|nom |prenom|" +
+    "article |chapitre |titre |annexe |rapport|simulation|opposition|recapitulatif|justificatif)",
 );
+
+/** Une adresse (« 4 RUE DES EXEMPLES », « LD LE PETIT BOIS ») ou un numéro de rubrique (« 5-2 Conditions … »). */
+const ADDRESS_OR_SECTION = /^\d|^(?:rue|avenue|av|boulevard|bd|chemin|allee|impasse|quai|place|route|lieu-dit|ld|bp|lotissement|residence)\b|\bcedex\b/;
+
+/** Lettres sans voyelle, symboles au milieu des mots : un bout de texte mal lu, pas un nom. */
+function looksGarbled(name: string): boolean {
+  if (/[§*$|{}<>^~\\[\]¤µ]/.test(name)) return true;
+  const words = name.split(/\s+/).filter((w) => w.length >= 3);
+  const bad = words.filter((w) => !/[aeiouyàâäéèêëîïôöùûü]/i.test(w) || /[a-zà-ÿ][A-ZÀ-Ý][a-zà-ÿ]/.test(w));
+  return words.length > 0 && bad.length * 2 >= words.length;
+}
 
 /** Ressemble à un organisme ou une entreprise (pour un courrier, on est plus exigeant). */
 function looksLikeOrganisation(line: string): boolean {
@@ -167,8 +180,10 @@ function looksLikeOrganisation(line: string): boolean {
 }
 
 function cleanName(raw: string): string | null {
-  const name = raw.split(/\s+-\s+|,|\s+\(|\s{2,}|\s+siret\b|\s+n°/i)[0].replace(/\s+/g, " ").trim();
+  // « COÔNET Mme Camille EXEMPLE » : la personne qui suit n'est pas l'expéditeur.
+  const name = raw.split(/\s+-\s+|,|\s+\(|\s{2,}|\s+siret\b|\s+n°|\s+(?:mme|mlle|mr|m\.|monsieur|madame)\s/i)[0].replace(/\s+/g, " ").trim();
   if (name.length < 3 || name.length > 45 || !/[A-Za-zÀ-ÿ]{3}/.test(name) || /\d{2}/.test(name)) return null;
+  if (ADDRESS_OR_SECTION.test(fl(name)) || looksGarbled(name)) return null;
   return titleCase(name);
 }
 

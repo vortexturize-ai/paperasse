@@ -6,9 +6,9 @@ import type { Issuer } from "./issuers.ts";
 type Signals = [cue: string, weight: number][];
 
 export const SIGNALS: Partial<Record<DocType, Signals>> = {
-  fiche_de_paie: [["net a payer au salarie", 6], ["montant net social", 4], ["bulletin de paie", 8], ["bulletin de salaire", 8], ["fiche de paie", 8], ["net a payer avant impot", 6], ["net a payer", 4], ["salaire brut", 4], ["salaire de base", 3], ["net imposable", 4], ["cotisations", 2], ["conges payes", 2], ["urssaf", 1], ["convention collective", 1], ["heures supplementaires", 2], ["prelevement a la source", 2]],
+  fiche_de_paie: [["net a payer au salarie", 6], ["montant net social", 4], ["bulletin de paie", 8], ["bulletin de salaire", 8], ["fiche de paie", 8], ["net a payer avant impot", 6], ["net a payer", 4], ["salaire brut", 4], ["salaire de base", 3], ["net imposable", 4], ["cotisations", 2], ["conges payes", 2], ["urssaf", 1], ["convention collective", 1], ["heures supplementaires", 2], ["prelevement a la source", 2], ["total brut", 4], ["total des cotisations", 4], ["cotisations et contributions", 3], ["salaire horaire", 3]],
   contrat_de_travail: [["contrat de travail", 8], ["contrat a duree indeterminee", 6], ["contrat a duree determinee", 6], ["periode d'essai", 4], ["le salarie", 3], ["l'employeur", 2], ["convention collective", 2], ["remuneration", 2], ["fait en deux exemplaires", 2], ["cdi", 2], ["cdd", 2]],
-  attestation_employeur: [["motif de la rupture", 5], ["date d'embauche", 3], ["destinee a france travail", 4], ["recu pour solde", 6], ["libre de tout engagement", 5], ["certifie que", 2], ["attestation employeur", 8], ["attestation de travail", 7], ["certificat de travail", 7], ["solde de tout compte", 7], ["atteste que", 2]],
+  attestation_employeur: [["motif de la rupture", 5], ["date d'embauche", 3], ["destinee a france travail", 4], ["destinee a pole emploi", 6], ["attestation d'assurance chomage", 8], ["salaires des 12 mois", 4], ["recu pour solde", 6], ["libre de tout engagement", 5], ["certifie que", 2], ["attestation employeur", 8], ["attestation de travail", 7], ["certificat de travail", 7], ["solde de tout compte", 7], ["atteste que", 2]],
   cv: [["curriculum vitae", 8], ["experience professionnelle", 4], ["experiences professionnelles", 4], ["competences", 3], ["centres d'interet", 3], ["formation", 1], ["langues", 1], ["permis b", 1]],
   diplome: [["releve de notes", 9], ["est decerne", 5], ["credits ects", 4], ["semestre", 2], ["admis", 2], ["diplome", 4], ["baccalaureat", 5], ["a ete decerne", 5], ["certificat d'aptitude", 4], ["brevet", 2], ["licence", 1], ["master", 1], ["mention", 1]],
   avis_imposition: [["avis de situation declarative", 8], ["date de mise en recouvrement", 3], ["avis d'impot", 8], ["avis d'imposition", 8], ["impot sur le revenu", 6], ["taxe fonciere", 8], ["taxe d'habitation", 8], ["revenu fiscal de reference", 6], ["numero fiscal", 4], ["finances publiques", 3], ["impots.gouv", 2], ["prelevement a la source", 1]],
@@ -23,7 +23,7 @@ export const SIGNALS: Partial<Record<DocType, Signals>> = {
   carte_grise: [["certificat d'immatriculation", 9], ["carte grise", 8], ["date de premiere immatriculation", 5], ["genre national", 3]],
   document_sante: [["releve de vos remboursements", 7], ["montant rembourse", 3], ["participation forfaitaire", 3], ["biologie medicale", 6], ["compte rendu d'analyses", 6], ["laboratoire", 2], ["indemnites journalieres", 5], ["patient", 2], ["prescripteur", 3], ["hematologie", 3], ["decompte de remboursement", 6], ["assurance maladie", 3], ["feuille de soins", 6], ["carte vitale", 4], ["complementaire sante", 4], ["mutuelle", 3], ["decompte", 3], ["remboursement", 1], ["arret de travail", 5], ["attestation de droits", 4]],
   ordonnance: [["prescription", 4], ["kinesitherapie", 3], ["seances de", 2], ["a renouveler", 2], ["dr", 1], ["ordonnance", 6], ["posologie", 4], ["fois par jour", 4], ["comprime", 3], ["gelule", 3], ["rpps", 4], ["docteur", 1], ["medecin", 1]],
-  courrier_administratif: [["nous avons besoin", 3], ["formulaire ci-joint", 3], ["renvoyez", 2], ["nous vous invitons", 2], ["nous vous notifions", 3], ["attestation de vigilance", 4], ["objet :", 2], ["salutations distinguees", 3], ["veuillez agreer", 3], ["sauf erreur de notre part", 3], ["lettre recommandee", 3], ["accuse de reception", 2], ["avis de passage", 6], ["commandement de payer", 7], ["a la requete de", 4], ["convocation", 3], ["vous etes convoque", 3], ["nous vous convoquons", 4], ["entretien prealable", 5], ["audience", 3], ["dernier rappel", 3], ["nous n'avons pas recu", 3], ["nous avons le plaisir", 2], ["appel de cotisations", 5], ["vous etes invite", 2], ["nous vous remercions", 2], ["madame, monsieur", 2], ["madame monsieur", 2], ["nous vous informons", 3], ["votre dossier", 3], ["pieces justificatives", 4], ["veuillez", 2], ["nous vous prions", 2], ["merci de nous faire parvenir", 4], ["votre demande", 2], ["notification", 2], ["allocataire", 3], ["mise en demeure", 4], ["relance", 2]],
+  courrier_administratif: [["pension d'invalidite", 6], ["votre pension", 4], ["notification d'attribution", 5], ["nous avons besoin", 3], ["formulaire ci-joint", 3], ["renvoyez", 2], ["nous vous invitons", 2], ["nous vous notifions", 3], ["attestation de vigilance", 4], ["objet :", 2], ["salutations distinguees", 3], ["veuillez agreer", 3], ["sauf erreur de notre part", 3], ["lettre recommandee", 3], ["accuse de reception", 2], ["avis de passage", 6], ["commandement de payer", 7], ["a la requete de", 4], ["convocation", 3], ["vous etes convoque", 3], ["nous vous convoquons", 4], ["entretien prealable", 5], ["audience", 3], ["dernier rappel", 3], ["nous n'avons pas recu", 3], ["nous avons le plaisir", 2], ["appel de cotisations", 5], ["vous etes invite", 2], ["nous vous remercions", 2], ["madame, monsieur", 2], ["madame monsieur", 2], ["nous vous informons", 3], ["votre dossier", 3], ["pieces justificatives", 4], ["veuillez", 2], ["nous vous prions", 2], ["merci de nous faire parvenir", 4], ["votre demande", 2], ["notification", 2], ["allocataire", 3], ["mise en demeure", 4], ["relance", 2]],
   amende: [["forfait post-stationnement", 8], ["avis d'amende", 8], ["exces de vitesse", 3], ["avis de contravention", 9], ["amende forfaitaire", 8], ["antai", 6], ["contravention", 4], ["infraction", 3], ["numero de telepaiement", 5], ["amende majoree", 6], ["avis de paiement", 2]],
   devis: [["devis", 7], ["bon pour accord", 6], ["devis valable", 4], ["proposition commerciale", 3]],
   ticket_garantie: [["sans contact", 3], ["ticket de caisse", 7], ["merci de votre visite", 5], ["garantie", 3], ["carte bancaire", 2], ["rendu", 1], ["total", 1]],
@@ -61,9 +61,56 @@ export interface Classification {
   category: Category;
   confidence: number; // 0 à 1
   scores: Partial<Record<DocType, number>>;
+  /** Nom plus précis que le type (« Convention de stage »), quand le papier l'annonce. */
+  label?: string;
+  /** Papier d'information : jamais « à faire ». */
+  info?: boolean;
 }
 
-export function classify(folded: string, mrz: MrzResult | null, issuer: Issuer | null): Classification {
+interface Kind {
+  cue: RegExp;
+  /** Seulement en début de ligne dans le haut du papier (son titre), pas dans une phrase qui le cite
+   *  (« merci de nous envoyer votre attestation employeur »). */
+  title: boolean;
+  type: DocType;
+  /** « topic » : le sujet du papier choisit le dossier (une expertise auto va dans Véhicule). */
+  category?: Category | "topic";
+  label: string;
+}
+
+// Papiers que leur titre suffit à reconnaître, même quand le corps parle d'autre chose
+// (une convention de stage parle d'accident et d'assurance maladie, une simulation de RSA de titre de séjour).
+const KINDS: Kind[] = [
+  { cue: /convention de stage/, title: true, type: "contrat_de_travail", label: "Convention de stage" },
+  { cue: /attestation (?:d')?employeur|attestation (?:pole empl|france travail)|attestation d'assurance chomage|destinee a (?:pole emploi|france travail)/, title: true, type: "attestation_employeur", label: "Attestation employeur" },
+  { cue: /rapport d'expertise/, title: true, type: "autre", category: "topic", label: "Rapport d'expertise" },
+  { cue: /attestation[^.\n]{0,40}indemnites journalieres/, title: true, type: "document_sante", label: "Attestation d'indemnités journalières" },
+  { cue: /(?:paiement|notification|attribution)[^.\n]{0,40}pension d'invalidite|votre pension d'invalidite/, title: true, type: "courrier_administratif", label: "Pension d'invalidité" },
+  { cue: /opposition (?:a (?:un |une )?|au |aux )?prelevements?/, title: true, type: "autre", category: "banque", label: "Opposition à un prélèvement" },
+  { cue: /attestation d'inscription|certificat d'inscription/, title: true, type: "certificat_scolarite", label: "Attestation d'inscription" },
+  { cue: /simulation (?:de vos droits|de droits|du rsa|de la prime|rsa|prime)/, title: true, type: "courrier_administratif", label: "Simulation de droits" },
+  { cue: /recapitulatif de (?:votre )?commande|bon de commande(?! n)|confirmation de (?:votre )?commande/, title: true, type: "ticket_garantie", label: "Bon de commande" },
+  { cue: /(?:peut valoir|vaut|tient lieu de) justificatif de domicile|justificatif d'abonnement|attestation d'abonnement/, title: false, type: "courrier_administratif", category: "logement", label: "Justificatif de domicile" },
+];
+const TITLE_LINES = 15;
+
+// « Prélèvement à la source de l'impôt sur le revenu » figure sur les fiches de paie, les pensions, les
+// attestations employeur : ce n'est pas un avis d'impôt.
+const WITHHOLDING = /prelevement a la source (?:de l'|sur l')?impot sur le revenu|impot sur le revenu preleve a la source/g;
+
+// Un formulaire ou une simulation qui POSE des questions sur un titre de séjour n'est pas le titre.
+const FORM_MARKS = ["simulation", "cerfa", "formulaire", "cochez", "emplacement reserve", "a remplir"];
+
+/** `foldedText` : texte replié sur une ligne ; `foldedLines` : le même avec ses retours à la ligne (titres). */
+export function classify(foldedText: string, mrz: MrzResult | null, issuer: Issuer | null, foldedLines = ""): Classification {
+  const heads = foldedLines.split("\n").map((l) => l.replace(/^[^a-z]+/, "")).filter(Boolean).slice(0, TITLE_LINES);
+  for (const k of KINDS) {
+    const hit = k.title ? heads.some((l) => l.search(k.cue) === 0) : k.cue.test(foldedText);
+    if (!hit) continue;
+    const category = k.category === "topic" ? topicOf(foldedText) ?? "autre" : k.category ?? kindCategory(k.type, issuer);
+    return { type: k.type, category, confidence: 0.9, scores: {}, label: k.label, info: true };
+  }
+  const folded = foldedText.replace(WITHHOLDING, "prelevement a la source");
   const scores: Partial<Record<DocType, number>> = {};
   for (const [type, signals] of Object.entries(SIGNALS) as [DocType, Signals][]) {
     let s = 0;
@@ -84,6 +131,7 @@ export function classify(folded: string, mrz: MrzResult | null, issuer: Issuer |
     scores.courrier_administratif = (scores.courrier_administratif ?? 0) + 2;
     if (!mrz) for (const t of ID_TYPES) if (scores[t]) scores[t] = scores[t]! * 0.3;
   }
+  if (!mrz && FORM_MARKS.some((m) => indexOfWord(folded, m) !== -1)) for (const t of ID_TYPES) if (scores[t]) scores[t] = scores[t]! * 0.3;
   // L'organisme oriente : un courrier de la CAF est d'abord un courrier administratif.
   if (issuer) {
     if (issuer.id === "antai" || issuer.id === "amendes") scores.amende = (scores.amende ?? 0) + 6;
@@ -114,7 +162,12 @@ export function classify(folded: string, mrz: MrzResult | null, issuer: Issuer |
 }
 
 const ID_TYPES: DocType[] = ["piece_identite", "titre_de_sejour", "permis_de_conduire"];
-const ADMIN_ISSUERS = ["caf", "cpam", "francetravail", "urssaf", "msa", "retraite", "prefecture", "mairie", "justice", "tribunal", "laposte", "crous", "education", "ants"];
+const ADMIN_ISSUERS = ["caf", "cpam", "francetravail", "urssaf", "msa", "retraite", "prefecture", "mairie", "justice", "tribunal", "laposte", "crous", "education", "ants", "mdph"];
+
+function kindCategory(type: DocType, issuer: Issuer | null): Category {
+  if (type === "courrier_administratif" && issuer && issuer.category !== "administratif") return issuer.category;
+  return TYPE_CATEGORY[type];
+}
 
 const LETTER_MARKS = ["madame,", "monsieur,", "madame, monsieur", "madame monsieur", "bonjour,", "veuillez agreer", "salutations distinguees", "nous vous prions d'agreer", "cordialement"];
 

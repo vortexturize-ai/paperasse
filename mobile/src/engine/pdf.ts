@@ -738,11 +738,35 @@ function pageJpegs(doc: PdfDoc, resources: Map<string, PdfValue> | null): Uint8A
     const x = doc.objects.get(ref.n);
     if (!x?.raw || x.value.k !== "dict" || doc.nameOf(x.value.v.get("Subtype")) !== "Image") continue;
     const f = doc.resolve(x.value.v.get("Filter"));
-    const isJpeg = (f?.k === "name" && (f.v === "DCTDecode" || f.v === "DCT")) || (f?.k === "arr" && f.v.length === 1 && doc.nameOf(f.v[0]) === "DCTDecode");
+    const names = f?.k === "name" ? [f.v] : f?.k === "arr" ? f.v.map((v) => doc.nameOf(v)) : [];
     const w = doc.num(x.value.v.get("Width")) ?? 0;
-    if (isJpeg && w >= 400 && x.raw[0] === 0xff && x.raw[1] === 0xd8) out.push(x.raw);
+    if (w < 400 || names.length === 0 || !["DCTDecode", "DCT"].includes(names[names.length - 1] ?? "")) continue;
+    // Certains scanners compressent encore le JPEG : [/FlateDecode /DCTDecode].
+    let bytes: Uint8Array | null = x.raw;
+    if (names.length === 2 && (names[0] === "FlateDecode" || names[0] === "Fl")) bytes = inflate(x.raw, doc.budget);
+    else if (names.length > 1) bytes = null;
+    if (bytes && bytes[0] === 0xff && bytes[1] === 0xd8) out.push(bytes);
   }
   return out;
+}
+
+const VOWEL = /[aeiouyàâäéèêëîïôöùûü]/i;
+/** Un mot plausible : des lettres, au moins une voyelle, en minuscules, avec majuscule initiale ou en capitales. */
+const isWord = (w: string) =>
+  /^[A-Za-zÀ-ÿ'’-]{3,}$/.test(w) && VOWEL.test(w) && (w === w.toLowerCase() || w === w.toUpperCase() || /^[A-ZÀ-Ý][a-zà-ÿ'’-]+$/.test(w));
+
+/** Le texte d'une page est-il lisible ? Beaucoup de scans portent une couche de texte cachée illisible
+ *  (police mal encodée, page à l'envers) : il vaut mieux alors relire l'image. */
+export function readableText(text: string): boolean {
+  const tokens = text.split(/[\s.,;:!?()«»"]+/).filter(Boolean);
+  let letters = 0;
+  let inWords = 0;
+  for (const t of tokens) {
+    const n = (t.match(/[A-Za-zÀ-ÿ]/g) ?? []).length;
+    letters += n;
+    if (isWord(t)) inWords += n;
+  }
+  return letters >= 20 && inWords / letters >= 0.5;
 }
 
 /** Lit un PDF. Ne lance jamais d'exception : un fichier illisible donne un texte vide. */
@@ -767,12 +791,18 @@ export function extractPdfText(bytes: Uint8Array): PdfResult {
     } catch {
       /* page abîmée ou trop grosse : on garde ce qui a été lu */
     }
-    const text = st.out.join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/\u0000/g, "").trim();
-    if (text.replace(/\s/g, "").length < 20) {
+    let text = st.out.join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/\u0000/g, "").trim();
+    if (!readableText(text)) {
+      let images: Uint8Array[] = [];
       try {
-        scans.push(...pageJpegs(doc, p.resources));
+        images = pageJpegs(doc, p.resources);
       } catch {
         /* image illisible */
+      }
+      // Texte illisible et une image de la page : on garde l'image, le texte ne ferait que tromper l'analyse.
+      if (images.length) {
+        scans.push(...images);
+        text = "";
       }
     }
     texts.push(text);

@@ -5,6 +5,7 @@ import { FACTURES } from "./factures.ts";
 import { IDENTITE_ETUDES_SANTE } from "./identite-etudes-sante.ts";
 import { IMPOTS_AMENDES } from "./impots-amendes.ts";
 import { LOGEMENT_BANQUE } from "./logement-banque.ts";
+import { PIEGES } from "./pieges.ts";
 import { TRAVAIL } from "./travail.ts";
 
 export const CORPUS: Record<string, Papier[]> = {
@@ -15,6 +16,7 @@ export const CORPUS: Record<string, Papier[]> = {
   Factures: FACTURES,
   "Identité, études, santé": IDENTITE_ETUDES_SANTE,
   "Lot de contrôle (écrit à l'aveugle)": CONTROLE,
+  "Pièges de vrais papiers (textes inventés)": PIEGES,
 };
 
 export const TOUS: Papier[] = Object.values(CORPUS).flat();

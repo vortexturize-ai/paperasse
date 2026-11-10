@@ -17,11 +17,16 @@ export interface AmountResult {
 // 1 234,56 € · 1.234,56 EUR · 612 € · 35,00€ · € 35,00 · 1234.56 € · 35,- €
 // Les groupes de milliers sont capturés d'un bloc (?=(…))\1 : pas de retour en arrière, donc pas de
 // blocage sur un texte piège (« 123 123 123 … » sans €).
+// « €96.25 » (site marchand) : le groupe de milliers n'est essayé que s'il existe vraiment.
 const AMOUNT =
-  /(?:€|(?<![a-z])eur)\s?(?=(\d{1,3}(?:[ .]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?))\1(?![\d,])|(?<![\d.,])(?=(\d{1,3}(?:[ .]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2}|,-)?))\2\s?(?:€|eur(?:os?)?(?![a-z]))/g;
+  /(?:€|(?<![a-z])eur)\s?(?=(\d{1,3}(?:[ .]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?))\1(?![\d,])|(?<![\d.,])(?=(\d{1,3}(?:[ .]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2}|,-)?))\2\s?(?:€|eur(?:os?)?(?![a-z]))/g;
 
 // Un montant juste après « capital » est celui de la société, jamais celui du papier.
 const CAPITAL = /capital(?: social)?(?: de)?\s*:?\s*$/;
+// Peine encourue citée par un texte de loi (« 30 000 € d'amende »), taux horaire : jamais le montant du papier.
+const PENALTY_AFTER = /^\s*d'amende/;
+const PENALTY_BEFORE = /emprisonnement|est puni|sont punis|passible/;
+const HOURLY = /^\s*(?:\/\s*h(?:eure)?\b|de l'heure|par heure|brut de l'heure|net de l'heure)/;
 
 export function parseAmount(raw: string): number | null {
   let s = raw.replace(/\s/g, "").replace(/,-$/, "");
@@ -37,8 +42,12 @@ export function findAmounts(folded: string): AmountMention[] {
     const raw = m[1] ?? m[2];
     const value = raw ? parseAmount(raw) : null;
     if (value === null || value <= 0) continue;
-    if (CAPITAL.test(before(folded, m.index ?? 0, 30))) continue;
-    out.push({ value, index: m.index ?? 0, length: m[0].length });
+    const at = m.index ?? 0;
+    const next = folded.slice(at + m[0].length, at + m[0].length + 20);
+    if (CAPITAL.test(before(folded, at, 30))) continue;
+    if (PENALTY_AFTER.test(next) || PENALTY_BEFORE.test(before(folded, at, 80))) continue;
+    if (HOURLY.test(next) || /taux horaire\s*:?\s*$/.test(before(folded, at, 20))) continue;
+    out.push({ value, index: at, length: m[0].length });
   }
   return out;
 }
@@ -98,6 +107,12 @@ const RECEIVE_CUES: [string, number][] = [
   ["restitution", 7],
   ["net paye", 9],
   ["net a payer", 9], // sur une fiche de paie, c'est ce que la personne reçoit
+  ["montant du paiement", 10],
+  ["montant net du paiement", 11],
+  ["montant du versement", 10],
+  ["montant net verse", 10],
+  ["montant de votre pension", 9],
+  ["a ete verse", 9],
 ];
 
 function bestCue(context: string, cues: [string, number][]): number {

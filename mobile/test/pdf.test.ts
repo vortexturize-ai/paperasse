@@ -127,6 +127,42 @@ describe("PDF scanné, chiffré, abîmé", () => {
     assert.equal(r.scans.length, 1);
     assert.deepEqual([...r.scans[0]], [...fakeJpeg]);
   });
+  const fakeJpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9]);
+  const scanWithText = (content: string, imageDict: string, image: Uint8Array) =>
+    handMade([
+      "<< /Type /Catalog /Pages 2 0 R >>",
+      "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+      "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 6 0 R >> /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>",
+      { dict: imageDict, stream: image },
+      { dict: "<< >>", stream: enc(`q 595 0 0 842 0 0 cm /Im0 Do Q ${content}`) },
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    ]);
+  const IMAGE = "<< /Type /XObject /Subtype /Image /Width 1240 /Height 1754 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode >>";
+
+  test("scan avec une couche de texte illisible (police mal encodée) : l'image est relue, le texte écarté", () => {
+    const garbage = "BT /F1 9 Tf 50 800 Td (\\366 \\366 \\347 \\366 \\375 \\366 \\366 \\366 \\361 \\366 \\366 \\366 \\347 \\366 \\366 \\375 \\366 \\366 \\366 \\366 \\366 \\366 \\361 \\366 \\244 \\247) Tj ET";
+    const r = extractPdfText(scanWithText(garbage, IMAGE, fakeJpeg));
+    assert.equal(r.text, "");
+    assert.equal(r.scans.length, 1);
+  });
+  test("scan avec une couche de texte à l'envers : l'image est relue", () => {
+    const upsideDown = "BT /F1 9 Tf 50 800 Td (1nE sJnoW uaa ?lp,l sed tsa,u aJ^ad sp aw oJ^Ep 'lsnoA ap sJ?d lE^ sa) uJ1^p ?nb,l aJ^aW) Tj ET";
+    const r = extractPdfText(scanWithText(upsideDown, IMAGE, fakeJpeg));
+    assert.equal(r.text, "");
+    assert.equal(r.scans.length, 1);
+  });
+  test("scan avec une bonne couche de texte (OCR du scanner) : le texte suffit", () => {
+    const good = "BT /F1 9 Tf 50 800 Td (Attestation de droits a l'assurance maladie pour Camille Exemple, valable jusqu'au 30 juin) Tj ET";
+    const r = extractPdfText(scanWithText(good, IMAGE, fakeJpeg));
+    assert.match(r.text, /Attestation de droits/);
+    assert.equal(r.scans.length, 0);
+  });
+  test("JPEG compressé une seconde fois ([/FlateDecode /DCTDecode]) : retrouvé", () => {
+    const dict = IMAGE.replace("/Filter /DCTDecode", "/Filter [/FlateDecode /DCTDecode]");
+    const r = extractPdfText(scanWithText("", dict, zlibSync(fakeJpeg)));
+    assert.equal(r.scans.length, 1);
+    assert.deepEqual([...r.scans[0]], [...fakeJpeg]);
+  });
   test("PDF protégé par mot de passe : signalé, pas lu", () => {
     const pdf = handMade(["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [] /Count 0 >>", "<< /Filter /Standard /V 2 >>"], "/Encrypt 3 0 R ");
     assert.equal(extractPdfText(pdf).encrypted, true);
