@@ -26,6 +26,11 @@ describe("bouclier : numéros validés par leur clé", () => {
 });
 
 describe("bouclier : ce qui est trouvé", () => {
+  test("numéro de sécurité sociale mal lu par la caméra (« NlR : L 85 … », « 2O3 ») : trouvé quand même", () => {
+    const found = findPersonalData("Identifiant (NlR) : L 85 05 75 2O3 456 78\nDate : 03/11/2026");
+    assert.ok(found.some((d) => d.kind === "securite_sociale"), JSON.stringify(found));
+    assert.ok(!findPersonalData("Merci de fournir 12 justificatifs avant le 03/11/2026").some((d) => d.kind === "securite_sociale"));
+  });
   test("chaque sorte de donnée personnelle", () => {
     const t = `Camille EXEMPLE, née le 14/06/1992
 25 rue des Fleurs
@@ -102,6 +107,27 @@ describe("détecteur d'arnaques", () => {
   test("un SMS court vers un faux site des impôts reste une arnaque, même s'il ressemble à une adresse mal lue", () => {
     assert.notEqual(detectScam("Impots : remboursement de 312 EUR en attente. Confirmez sur seruice-public.fr avant ce soir.").level, "aucun");
     assert.notEqual(detectScam("Ameli : votre carte vitale expire. Mettez a jour vos informations sur arneli.fr").level, "aucun");
+  });
+  test("SMS vers « impots.gouv.fi » : arnaque, même avec une extension rare", () => {
+    assert.equal(detectScam("Impots : remboursement de 312 EUR en attente. Confirmez sur impots.gouv.fi avant ce soir.").level, "arnaque_probable");
+  });
+  test("long mail piégé vers « impots.gouv.fr.com » : pas pris pour une adresse officielle mal lue", () => {
+    const lignes = [
+      "Direction generale des finances publiques",
+      "Objet : votre remboursement d'impot",
+      "Madame, Monsieur,",
+      "Apres les derniers calculs annuels de votre impot sur le revenu, nous avons determine que vous etes eligible a un remboursement de 412,50 euros.",
+      "Pour recevoir ce remboursement, vous devez confirmer vos informations bancaires dans les meilleurs delais.",
+      "Votre dossier sera cloture si vous ne repondez pas sous 48h, et le remboursement sera definitivement perdu.",
+      "Rendez-vous sur impots.gouv.fr.com, rubrique remboursement, puis saisissez le numero de votre carte et le cryptogramme.",
+      "Ce service est gratuit et securise. Il vous suffit de quelques minutes pour finaliser la demande.",
+      "Si vous avez deja effectue cette demande, merci de ne pas tenir compte de ce message et de conserver votre numero de dossier.",
+      "Pour toute question, notre equipe reste a votre disposition du lundi au vendredi, de neuf heures a dix-sept heures.",
+      "Nous vous remercions de votre confiance et de votre comprehension.",
+      "Veuillez agreer, Madame, Monsieur, l'expression de nos salutations distinguees.",
+      "Le service des remboursements",
+    ];
+    assert.equal(detectScam(lignes.join("\n")).level, "arnaque_probable");
   });
   test("les adresses mail ne sont pas des liens", () => {
     assert.equal(detectScam("Écris-nous : contact@ameli-faux.com").links.length, 0);

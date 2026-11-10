@@ -125,6 +125,66 @@ Fait à Exempleville, le 08/03/2022. Cachet et signature de l'employeur.`,
     },
   },
   {
+    id: "attestation-scannee-adresses-collees",
+    texte: `ATTESTATION D'EMPLOYEUR DESTINÉE À PÔLE EMPLOI
+Employeur : SAS EXEMPLE ESPACES VERTS
+N° SIRET : 000 000 000 00000
+Salarié : M. Lucas EXEMPLE
+Emploi occupé : jardinier
+Date d'embauche : 02/05/2022
+Dernier jour travaillé et payé : 30/06/2022
+Motif de la rupture du contrat de travail : fin de contrat à durée déterminée
+Salaires des 12 mois civils complets précédant le dernier jour travaillé payé
+Mai 2022 : 1 610,00 € brut, nombre d'heures 151,67
+Juin 2022 : 1 610,00 € brut, nombre d'heures 151,67
+Indemnité compensatrice de congés payés versée : 322,00 €. Indemnité de fin de contrat versée : 322,00 €.
+Préavis : non effectué. Contrat de professionnalisation : non. Le salarié bénéficie d'une portabilité de la prévoyance.
+L'employeur certifie l'exactitude des renseignements portés sur cette attestation et la remet au salarié le jour de la fin du contrat.
+Pour toute information sur le prélèvement à la source, consultez www.impots.gouv.fr.ou rendez-vous dans votre centre des finances publiques (www.impots.gouu;fr.ou contacter votre centre).
+Pour le calcul de vos droits par France Travail, la fiche de paie détaillée est disponible sur www.exemple-paie.fr.
+Le salarié doit remettre cette attestation à France Travail dès son inscription.
+Fait à Exempleville, le 01/07/2022. Cachet et signature de l'employeur.`,
+    attendu: {
+      type: "attestation_employeur", dossier: "travail", emetteur: "SAS Exemple Espaces Verts", date_document: "2022-07-01",
+      date_limite: null, a_traiter: false,
+    },
+  },
+  {
+    id: "paie-titre-mal-lu",
+    texte: `BI'ILLETIN DE PAIE GLARIFIE
+SAS EXEMPLE TRANSPORTS
+Période du 01/03/2023 au 31/03/2023
+Salaire de base 151,67 h 1 720,00
+Salaire brut 1 720,00
+Cotisations salariales 378,40
+Net à payer avant impôt sur le revenu 1 341,60
+Net payé 1 341,60 €`,
+    attendu: {
+      type: "fiche_de_paie", emetteur: "SAS Exemple Transports", date_document: "2023-03-31", montant: 1341.6, sens: "a_recevoir",
+      a_traiter: false,
+    },
+  },
+  {
+    id: "caf-montant-du-droit",
+    texte: `Caisse d'allocations familiales du Rhône
+Lyon, le 05/10/2026
+Madame,
+Votre allocation de logement a été recalculée à partir du 01/10/2026.
+Montant du droit : 212,40 € par mois.
+Ce montant sera versé sur votre compte le 05 de chaque mois.
+Veuillez agréer, Madame, nos salutations distinguées.`,
+    attendu: { type: "courrier_administratif", organisme: "caf", montant: 212.4, sens: "a_recevoir", a_traiter: false, date_limite: null },
+  },
+  {
+    id: "bordereau-total-sans-demande",
+    texte: `BORDEREAU DE REMISE DE CHÈQUES
+Nombre de chèques remis : 3
+Total : 1 250,00 €
+Remis le 12/09/2026
+Signature du remettant`,
+    attendu: { type: "autre", montant: 1250, sens: "information", a_traiter: false, date_limite: null },
+  },
+  {
     id: "pension-paiement-verse",
     texte: `L'Assurance Maladie
 Caisse primaire d'assurance maladie du Rhône
@@ -139,6 +199,17 @@ Ce montant a été versé sur votre compte bancaire.`,
     attendu: {
       type: "courrier_administratif", organisme: "cpam", montant: 1248.6, sens: "a_recevoir", a_traiter: false,
     },
+  },
+  {
+    id: "pension-total-du-paiement",
+    texte: `Assurance Maladie
+Relevé de paiement de votre pension d'invalidité
+Période de juin 2024
+Montant brut : 1 358,00 €
+CSG taux réduit : 51,60 €
+CASA : 4,10 €
+Total du paiement : 1 302,30 €`,
+    attendu: { type: "courrier_administratif", organisme: "cpam", montant: 1302.3, sens: "a_recevoir", a_traiter: false, date_limite: null },
   },
   {
     id: "pension-notification-recours-sans-date",

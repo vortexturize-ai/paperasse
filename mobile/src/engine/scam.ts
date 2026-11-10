@@ -1,4 +1,4 @@
-import { fold, indexOfWord } from "./normalize.ts";
+import { editDistance, fold, indexOfWord } from "./normalize.ts";
 
 export type ScamLevel = "aucun" | "suspect" | "arnaque_probable";
 
@@ -59,7 +59,7 @@ function isOfficial(domain: string): boolean {
 }
 
 // URL (http, www) ou nom de domaine nu (« ameli-remboursement.com »). Bornés : pas de blocage possible.
-const URL = /(?:https?:\/\/|www\.)[^\s<>"')\]]{2,200}|(?<![@\w.-])(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.){1,4}(?:fr|com|net|org|eu|info|xyz|top|online|site|shop|click|live|support|help|pw|cc|ru|cn|icu|buzz|cyou|io|me|co|app|link|ly|gl|gd|at|id|sbs|lol|quest|rest|monster)(?![a-z0-9-])(?:\/[^\s<>"')\]]{0,200})?/gi;
+const URL = /(?:https?:\/\/|www\.)[^\s<>"')\]]{2,200}|(?<![@\w.-])(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.){1,4}(?:fr|com|net|org|eu|info|xyz|top|online|site|shop|click|live|support|help|pw|cc|ru|cn|icu|buzz|cyou|io|me|co|app|link|ly|gl|gd|at|id|sbs|lol|quest|rest|monster|fi|de|it|es|be|ch|uk|us|biz|tk|ml|ga|cf|gq|vip|work|fun|space|website|store|tech|cloud|cam|mobi|win|bid|loan|men|stream|download)(?![a-z0-9-])(?:\/[^\s<>"')\]]{0,200})?/gi;
 
 function domainOf(url: string): string {
   const s = url.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "");
@@ -106,23 +106,28 @@ const BAIT = [
 const COUPONS = ["pcs", "transcash", "neosurf", "paysafecard", "bitcoin", "crypto-monnaie", "western union", "coupon recharge", "carte cadeau"];
 const PREMIUM_PHONE = /(?<!\d)08\s?9\d(?:[\s.]?\d{2}){3}(?!\d)/;
 
-function editDistance(a: string, b: string): number {
-  if (Math.abs(a.length - b.length) > 3) return 99;
-  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    const cur = [i];
-    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    prev = cur;
-  }
-  return prev[b.length];
-}
-
 /** Sur un long papier scanné, « tmpats.gouv.fi » ou « seruice-public.fr » sont l'adresse officielle mal lue
  *  (pas un piège : les arnaques arrivent par SMS ou mail courts). */
-function misreadOfficial(domain: string): boolean {
-  if (/(?:^|\.)gouv\.[a-z]{1,3}$/.test(domain)) return true;
-  const bare = domain.replace(/^w[a-z]{1,2}\./, "");
+function misreadOfficial(raw: string): boolean {
+  const domain = raw.replace(/[;,]/g, ".");
+  // « gouv.fi », « gouv.tr » : le « fr » mal lu (« gouv.co » reste suspect).
+  const tld = domain.match(/(?:^|\.)gouv\.([a-z]{1,3})$/)?.[1];
+  if (tld && editDistance(tld, "fr") <= 1) return true;
+  // « impots.gouv.fr.ou » : un petit mot collé derrière l'adresse (« impots.gouv.fr.secure.com » reste suspect).
+  const parts = domain.split(".");
+  const last = parts[parts.length - 1];
+  const realTld = /^(?:com|net|org|info|fr|eu|io|co|me|app|biz|xyz|top|site|online|shop|pw|cc|ru|cn)$/.test(last); // « impots.gouv.fr.com » reste suspect
+  const trimmed = parts.length > 2 && last.length <= 3 && !realTld ? parts.slice(0, -1).join(".") : domain;
+  if (trimmed !== domain && isOfficial(trimmed)) return true;
+  const bare = trimmed.replace(/^w[a-z]{1,2}\./, "");
   return [...OTHER_OFFICIAL, ...BRANDS.flatMap((b) => b.domains)].some((d) => d.length >= 8 && editDistance(bare, d) <= 3);
+}
+
+/** « des impôts », « de la CAF », « d'EDF », « de l'Urssaf ». */
+function ofName(name: string): string {
+  if (name.startsWith("les ")) return `des ${name.slice(4)}`;
+  if (name.startsWith("le ")) return `du ${name.slice(3)}`;
+  return /^[aeiouyéèAEIOUYÉÈ]/.test(name) ? `d'${name}` : `de ${name}`;
 }
 
 /** Un papier long et sur plusieurs lignes (courrier, fiche, attestation), pas un message. */
@@ -165,9 +170,11 @@ export function detectScam(text: string): ScamReport {
     const tld = l.domain.split(".").pop() ?? "";
     if (RISKY_TLDS.includes(tld)) add(2, `Le lien se termine par « .${tld} », une terminaison très utilisée par les arnaques.`);
   }
-  if (mentioned.length && foreign.length) {
+  // Un long courrier qui cite l'Urssaf ET le site de l'employeur n'est pas suspect ; seul un lien qui se déguise compte.
+  const misleading = longPaper ? foreign.filter((l) => l.impersonates) : foreign;
+  if (mentioned.length && misleading.length) {
     const b = mentioned[0];
-    add(3, `Le message parle de ${b.name}, mais envoie vers un autre site (${foreign[0].domain}). Le vrai site : ${b.domains[0]}.`);
+    add(3, `Le message parle ${ofName(b.name)}, mais envoie vers un autre site (${misleading[0].domain}). Le vrai site : ${b.domains[0]}.`);
   }
 
   if (CREDENTIALS.some((c) => indexOfWord(f, c) !== -1)) {

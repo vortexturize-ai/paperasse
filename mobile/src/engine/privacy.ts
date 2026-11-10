@@ -97,6 +97,15 @@ const BIRTH = /(?:ne|nee|ne\(e\)|date de naissance|naissance)\s*(?:le|:)?\s*(\d{
 const ADDRESS = /(?<![\dA-Za-z])\d{1,4}(?:\s?(?:bis|ter))?,?\s(?:rue|avenue|av\.|boulevard|bd|all[ée]e|place|chemin|impasse|route|quai|cours|square|r[ée]sidence|lotissement)\s[^\n,]{2,40}?,?\s(?:\d{5})\s[A-Za-zÀ-ÿ' -]{2,30}/gi;
 const MRZ_LINE = /^[A-Z0-9<]{30,44}$/;
 
+/** « L78 08 45 2O8 … » lu par la caméra : lettres prises pour des chiffres dans une longue suite de chiffres.
+ *  Même longueur que le texte, pour garder les positions. */
+function ocrDigits(text: string): string {
+  return text.replace(/[0-9OolIL|][0-9OolIL| ]{11,22}[0-9OolIL|]/g, (run) => {
+    if (run.replace(/\D/g, "").length < 8 || !/[OolIL|]/.test(run)) return run;
+    return run.replace(/[Oo]/g, "0").replace(/[lIL|]/g, "1");
+  });
+}
+
 /** Toutes les données personnelles du papier, une fois chacune, dans l'ordre du texte. */
 export function findPersonalData(text: string): PersonalItem[] {
   const out: PersonalItem[] = [];
@@ -120,9 +129,12 @@ export function findPersonalData(text: string): PersonalItem[] {
   for (const m of text.matchAll(IBAN)) {
     if (isValidIban(m[0])) push("iban", m.index ?? 0, m[0].length, maskKeepEnds(m[0].toUpperCase(), 4, 4));
   }
-  for (const m of text.matchAll(NIR)) {
-    if (isValidNir(m[0]) || /securite sociale|n° ss|nir/.test(folded.slice(Math.max(0, (m.index ?? 0) - 40), m.index))) {
-      push("securite_sociale", m.index ?? 0, m[0].length, maskKeepEnds(m[0], 1, 2));
+  for (const source of [text, ocrDigits(text)]) {
+    for (const m of source.matchAll(NIR)) {
+      // « NlR » : le I du libellé est souvent lu l par la caméra.
+      if (isValidNir(m[0]) || /securite sociale|n° ss|\bn[il1|]r\b/.test(folded.slice(Math.max(0, (m.index ?? 0) - 40), m.index))) {
+        push("securite_sociale", m.index ?? 0, m[0].length, maskKeepEnds(m[0], 1, 2));
+      }
     }
   }
   for (const m of folded.matchAll(FISCAL)) {

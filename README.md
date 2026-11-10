@@ -97,7 +97,7 @@ Ce qui n'est **pas encore** chiffré : les images des pages, rangées dans l'esp
 
 L'analyse est testée sur un banc d'essai qui grandit à chaque bug trouvé :
 
-- **131 papiers fictifs annotés** (CAF, impôts, amendes, fiches de paie, contrats, pièces d'identité, factures…) et plus de 1 000 variantes générées ;
+- **136 papiers fictifs annotés** (CAF, impôts, amendes, fiches de paie, contrats, pièces d'identité, factures…) et plus de 1 000 variantes générées ;
 - des **pièges relevés sur de vrais papiers**, puis réécrits avec des données inventées : date d'une loi prise pour la date du courrier, délai d'une clause pris pour une date limite, adresse officielle mal lue sur un scan prise pour une arnaque… Aucun vrai papier n'est gardé ;
 - des **photos mal lues simulées** (lettres et chiffres confondus, accents perdus, lignes coupées ou mélangées, parasites) ;
 - des milliers de textes aléatoires pour vérifier que rien ne plante ni ne ralentit ;

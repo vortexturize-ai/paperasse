@@ -1,5 +1,5 @@
 import type { Category } from "../lib/categories.ts";
-import { fold, indexOfWord } from "./normalize.ts";
+import { editDistance, fold, indexOfWord } from "./normalize.ts";
 
 export interface Issuer {
   id: string;
@@ -160,6 +160,13 @@ const NOT_A_NAME = new RegExp(
     "article |chapitre |titre |annexe |rapport|simulation|opposition|recapitulatif|justificatif)",
 );
 
+// Titre de papier mal lu par la caméra (« BI'ILLETIN DE PAIE ») : pas un nom d'expéditeur.
+const TITLE_WORDS = ["bulletin", "attestation", "certificat", "notification", "convocation", "quittance", "declaration"];
+function looksLikeTitle(foldedLine: string): boolean {
+  const first = (foldedLine.split(/\s+/)[0] ?? "").replace(/[^a-z]/g, "");
+  return first.length >= 7 && TITLE_WORDS.some((w) => editDistance(first, w) <= 2);
+}
+
 /** Une adresse (« 4 RUE DES EXEMPLES », « LD LE PETIT BOIS ») ou un numéro de rubrique (« 5-2 Conditions … »). */
 const ADDRESS_OR_SECTION = /^\d|^(?:rue|avenue|av|boulevard|bd|chemin|allee|impasse|quai|place|route|lieu-dit|ld|bp|lotissement|residence)\b|\bcedex\b/;
 
@@ -214,7 +221,7 @@ export function guessSender(textLines: string[], opts: { strict?: boolean; compa
     if (l.length < 3 || l.length > 45) continue;
     if (/\d{2}/.test(l)) continue; // adresse, téléphone, date
     if (/^[a-zà-ÿ]/.test(l)) continue; // suite d'une phrase coupée
-    if (NOT_A_NAME.test(fl(l))) continue;
+    if (NOT_A_NAME.test(fl(l)) || looksLikeTitle(fl(l))) continue;
     if (/[:;!?.]$|^[^\wÀ-ÿ]/.test(l) || l.split(/\s+/).length > 6) continue; // une phrase, pas un nom
     // La phrase continue sur la ligne suivante : ce n'est pas un nom isolé.
     if (!/[.:;!?,]$/.test(l) && /^[a-zà-ÿ]/.test(ls[i + 1] ?? "")) continue;

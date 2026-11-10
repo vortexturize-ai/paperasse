@@ -97,6 +97,8 @@ const BETWEEN = /entre le\s.{4,30}?\set(?: le)?\s*$/;
 
 const ID_TYPES: DocType[] = ["piece_identite", "titre_de_sejour", "permis_de_conduire"];
 const EMPLOYER_PAPERS: DocType[] = ["fiche_de_paie", "attestation_employeur"];
+const WEAK_PAY_TYPES: DocType[] = ["autre", "courrier_administratif", "document_sante"];
+const PAY_REQUEST = ["vous devez", "vous etes redevable", "somme de", "d'un montant de", "rembourser", "regler", "payer", "prelevement", "sera preleve"];
 const SOCIAL_BODIES = ["msa", "urssaf", "francetravail", "cpam", "retraite", "dgfip", "caf"];
 const NO_TODO: DocType[] = ["fiche_de_paie", "contrat_de_travail", "cv", "diplome", "bail", "quittance_loyer", "releve_bancaire", "ordonnance", "certificat_scolarite", "attestation_employeur", "carte_grise", "ticket_garantie", "devis"];
 
@@ -375,6 +377,8 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
   // Le revenu fiscal de référence n'est pas une somme à payer ni à recevoir : pas de montant mis en avant.
   if (type === "avis_imposition" && amount?.direction === "information") amount = null;
   if (cls.info && type === "autre" && amount) amount = { ...amount, direction: "information" };
+  // Un papier inconnu ou un courrier avec un simple « Total » n'est pas une demande de paiement.
+  if (WEAK_PAY_TYPES.includes(type) && amount?.direction === "a_payer" && !hasAny(f, PAY) && !hasAny(f, PAY_REQUEST)) amount = { ...amount, direction: "information" };
   const facts: KeyFact[] = findReferences(text, f);
 
   // Informations propres à certains papiers.

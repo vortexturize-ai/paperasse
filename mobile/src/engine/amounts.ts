@@ -112,6 +112,15 @@ const RECEIVE_CUES: [string, number][] = [
   ["montant du versement", 10],
   ["montant net verse", 10],
   ["montant de votre pension", 9],
+  ["montant de la pension", 9],
+  ["montant du droit", 10],
+  ["montant de l'allocation", 9],
+  ["montant de la prestation", 9],
+  ["montant de l'aide", 9],
+  ["montant mensuel", 8],
+  ["total du paiement", 10],
+  ["total verse", 10],
+  ["total paye", 9],
   ["a ete verse", 9],
 ];
 
