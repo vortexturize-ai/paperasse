@@ -80,7 +80,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
   <img src="docs/images/proteger.png" alt="Écrans : réglages de sécurité, détecteur d'arnaques, droits du locataire" width="100%">
 </p>
 
-| | |
+| Protection | Ce que ça fait |
 |---|---|
 | **Coffre chiffré** | La base des papiers est chiffrée (SQLCipher, AES-256). La clé reste dans la puce de sécurité du téléphone. |
 | **Code secret** | Demandé à l'ouverture et après une minute sans utiliser l'app. Attente croissante après plusieurs erreurs. |
