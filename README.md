@@ -5,6 +5,11 @@
 <p align="center"><b>Le coffre-fort de tes papiers, qui les comprend pour toi.</b><br>
 Tout reste sur ton téléphone. Pas de compte, pas de serveur, marche hors connexion.</p>
 
+<p align="center">
+  <a href="https://ko-fi.com/paperasse"><img src="https://img.shields.io/badge/Soutenir-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white" alt="Soutenir sur Ko-fi"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0-1F3C88" alt="Licence AGPL-3.0"></a>
+</p>
+
 ---
 
 Paperasse range, renomme et explique tes papiers : courriers de la CAF, avis d'impôt, factures, fiches de paie, contrats, pièces d'identité. Il trouve la date limite, te prévient avant, et t'aide à répondre.
@@ -76,6 +81,12 @@ Les contributions sont les bienvenues : signalement de bugs, papiers mal compris
 Une faille de sécurité ? Ne pas ouvrir de ticket public : voir [SECURITY.md](SECURITY.md).
 
 ## Soutenir le projet
+
+Paperasse est gratuit, sans publicité et le restera. Si l'app t'aide, tu peux soutenir son développement sur **[Ko-fi](https://ko-fi.com/paperasse)** (un don ponctuel ou mensuel). Les dons servent aux nouvelles fonctions, à plus de langues et à la version iPhone.
+
+[![Soutenir Paperasse sur Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/paperasse)
+
+Sans dépenser un centime :
 
 - Mets une étoile au dépôt et parle de Paperasse autour de toi.
 - Signale ce qui ne marche pas, ou un papier mal compris (anonymisé).
