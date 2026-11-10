@@ -1,0 +1,35 @@
+# Paperasse — ce qui ne va jamais dans git (règles valables pour tout le projet)
+
+# Dépendances et caches
+node_modules/
+.expo/
+.wrangler/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Dossiers natifs générés par `expo prebuild` (ne pas modifier à la main)
+mobile/android/
+mobile/ios/
+
+# Secrets et réglages locaux
+.env
+.env*.local
+.dev.vars
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Données personnelles : jamais de vrais papiers ni de sauvegardes dans le dépôt
+*.paperasse
+*.db
+*.db-wal
+*.db-shm
+
+# Systèmes
+.DS_Store
+Thumbs.db
+npm-debug.*
