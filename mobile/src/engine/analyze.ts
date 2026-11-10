@@ -74,6 +74,20 @@ const RELANCE = [
   "facture impayee", "reste impayee", "restee impayee", "n'a pas ete reglee", "n'a pas ete payee", "malgre nos precedents", "malgre nos relances",
 ];
 const INDU = ["trop-percu", "trop percu", "indu", "vous devez rembourser", "remboursement de la somme", "percu a tort", "de trop entre"];
+// « Prise de rendez-vous au 04… », « www.cabinet.fr Rendez-vous : 04… » : l'en-tête d'un cabinet, pas une convocation.
+// Regardé autour de chaque « rendez-vous » seulement : pas de retour en arrière sur un texte géant.
+function withoutRdvHeader(f: string): string {
+  return f.replace(/rendez-vous/g, (m: string, i: number) => {
+    const before = f.slice(Math.max(0, i - 40), i);
+    const after = f.slice(i + m.length, i + m.length + 14);
+    const header =
+      /(?:prise de|sur|prendre|pour prendre|vos|vous pouvez prendre) $/.test(before) ||
+      /\.(?:fr|com)\s+$/.test(before) ||
+      /^ (?:en ligne|sur doctolib|par telephone)/.test(after) ||
+      /^\s*:?\s*(?:au\s*)?[\d+(]/.test(after);
+    return header ? " ".repeat(m.length) : m;
+  });
+}
 const RDV = [
   "rendez-vous", "convocation", "vous etes convoque", "vous etes attendu", "nous vous convoquons", "entretien prealable", "audience du", "a l'audience",
 ];
@@ -301,7 +315,7 @@ function payslipNet(f: string): number | null {
 function detectIntent(f: string, amount: AmountDirection | null, hasDeadline: boolean): Intent {
   if (hasAny(f, RELANCE)) return "relance";
   if (hasAny(f, INDU)) return "indu";
-  if (hasAny(f, RDV)) return "rdv";
+  if (hasAny(withoutRdvHeader(f), RDV)) return "rdv";
   if (hasAny(f, SEND_DOC)) return "envoyer_document";
   if (amount === "a_payer" || hasAny(f, PAY)) return "payer";
   if (hasAny(f, RIGHTS) || amount === "a_recevoir") return "droits";
@@ -357,7 +371,7 @@ export function analyzeText(rawText: string, opts: EngineOptions): EngineResult 
     headerName = guessSender(textLines.filter((l) => !social.patterns.some((p) => indexOfWord(fold(l), p) !== -1)), { company: true });
   }
 
-  const rdvLetter = hasAny(f, RDV);
+  const rdvLetter = hasAny(withoutRdvHeader(f), RDV);
   const dated = datedFacts(text, f, opts.today, rdvLetter);
   // Une clause d'un contrat ou d'une attestation (« dans les 48 heures ») n'est pas une date limite.
   if (dated.deadlineRelative && (NO_TODO.includes(type) || cls.info)) {

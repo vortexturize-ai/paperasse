@@ -61,15 +61,20 @@ function kindOf(code: string): MrzKind {
 }
 
 /** Cherche une bande MRZ dans les lignes lues. Renvoie null si aucune. */
+// Une photo lit souvent un caractère de trop ou de moins dans la bande : on tolère 2 d'écart et on recale.
+const near = (l: string, n: number) => Math.abs(l.length - n) <= 2;
+const fit = (l: string, n: number) => (l.length >= n ? l.slice(0, n) : l + "<".repeat(n - l.length));
+
 export function parseMrz(rawLines: string[], todayYear = new Date().getFullYear()): MrzResult | null {
   const candidates = rawLines
     .map((l) => l.toUpperCase().replace(/\s+/g, "").replace(/«/g, "<<").replace(/‹/g, "<"))
-    .filter((l) => /^[A-Z0-9<]{28,46}$/.test(l) && l.includes("<"));
+    .filter((l) => /^[A-Z0-9<]{26,48}$/.test(l) && l.includes("<"));
 
   // Passeport (TD3) : 2 lignes de 44.
   for (let i = 0; i + 1 < candidates.length; i++) {
-    const [l1, l2] = [candidates[i], candidates[i + 1]];
-    if (l1.length === 44 && l2.length === 44 && l1.startsWith("P")) {
+    if (!(near(candidates[i], 44) && near(candidates[i + 1], 44) && candidates[i].startsWith("P"))) continue;
+    const [l1, l2] = [fit(candidates[i], 44), fit(candidates[i + 1], 44)];
+    {
       const num = l2.slice(0, 9);
       const birth = digits(l2.slice(13, 19));
       const expiry = digits(l2.slice(21, 27));
@@ -88,8 +93,9 @@ export function parseMrz(rawLines: string[], todayYear = new Date().getFullYear(
 
   // Carte d'identité ou titre de séjour (TD1) : 3 lignes de 30.
   for (let i = 0; i + 2 < candidates.length; i++) {
-    const [l1, l2, l3] = [candidates[i], candidates[i + 1], candidates[i + 2]];
-    if (l1.length === 30 && l2.length === 30 && l3.length === 30) {
+    if (!(near(candidates[i], 30) && near(candidates[i + 1], 30) && near(candidates[i + 2], 30) && /^[ACI]/.test(candidates[i]))) continue;
+    const [l1, l2, l3] = [fit(candidates[i], 30), fit(candidates[i + 1], 30), fit(candidates[i + 2], 30)];
+    {
       const num = l1.slice(5, 14);
       const birth = digits(l2.slice(0, 6));
       const expiry = digits(l2.slice(8, 14));
@@ -108,8 +114,9 @@ export function parseMrz(rawLines: string[], todayYear = new Date().getFullYear(
 
   // Ancienne carte d'identité française : 2 lignes de 36 (pas de date d'expiration dans la bande).
   for (let i = 0; i + 1 < candidates.length; i++) {
-    const [l1, l2] = [candidates[i], candidates[i + 1]];
-    if (l1.length === 36 && l2.length === 36 && l1.startsWith("IDFRA")) {
+    if (!(near(candidates[i], 36) && near(candidates[i + 1], 36) && /^[I1]DFRA/.test(candidates[i]))) continue;
+    const [l1, l2] = [fit(candidates[i], 36), fit(candidates[i + 1], 36)];
+    {
       const birth = digits(l2.slice(27, 33));
       return {
         kind: "carte_identite",

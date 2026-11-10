@@ -1,4 +1,12 @@
 import type { Papier } from "../outils/fiche.ts";
+import { td1 } from "../outils/mrz.ts";
+
+// Verso d'une carte d'identité photographié : la bande MRZ est lue avec un caractère en trop ou en moins par ligne.
+const [m1, m2, m3] = td1({
+  code: "ID", pays: "FRA", numero: "Y7KQ2MZ81", naissance: "1987-02-11", sexe: "F", expiration: "2032-05-20",
+  nationalite: "FRA", nom: "EXEMPLE", prenoms: ["CAMILLE"],
+});
+const mrzPhoto = [`${m1}<`, m2.slice(0, 29), `${m3.slice(0, 25)} ${m3.slice(25)}<`].join("\n");
 
 // Pièges rencontrés sur de vrais papiers, réécrits avec des noms, numéros et montants inventés.
 export const PIEGES: Papier[] = [
@@ -183,6 +191,49 @@ Total : 1 250,00 €
 Remis le 12/09/2026
 Signature du remettant`,
     attendu: { type: "autre", montant: 1250, sens: "information", a_traiter: false, date_limite: null },
+  },
+  {
+    id: "cni-verso-photo-mrz-mal-lue",
+    texte: `RÉPUBLIQUE FRANÇAISE
+Adresse : 12 rue des Exemples 69000 Lyon
+Date de délivrance : 20.05.2022
+Autorité de délivrance : Préfecture du Rhône
+${mrzPhoto}`,
+    attendu: { type: "piece_identite", dossier: "identite", a_traiter: false, date_limite: null, urgence: "aucune" },
+  },
+  {
+    id: "compte-rendu-radiologie-dentaire",
+    texte: `CABINET DE RADIOLOGIE EXEMPLE
+Prise de rendez-vous au 04 00 00 00 00 ou sur doctolib.fr
+www.radiologie-exemple.fr Rendez-vous : 04 00 00 00 01
+Docteur Paul EXEMPLE
+Diplômé de la faculté de médecine de Lyon
+COMPTE RENDU
+Radiographie panoramique dentaire du 12/03/2024
+Indication : bilan dentaire avant soins.
+Résultat : pas de lésion osseuse visible, dents de sagesse incluses.
+Conclusion : examen sans particularité.
+Dr Paul EXEMPLE`,
+    attendu: { type: "document_sante", dossier: "sante", date_document: "2024-03-12", a_traiter: false, date_limite: null },
+  },
+  {
+    id: "rib-photo-iban-mal-lu",
+    texte: `RELEVÉ D'IDENTITÉ BANCAIRE
+Titulaire du compte : M. Lucas EXEMPLE
+Domiciliation : BANQUE EXEMPLE LYON CENTRE
+Code banque 30006 Code guichet 00001 N° de compte 12345678901 Clé RIB 89
+IBAN FR76 3000 6000 O112 3456 7890 l89
+BIC EXEMFRPP`,
+    attendu: { type: "releve_bancaire", dossier: "banque", a_traiter: false, date_limite: null, montant: null },
+  },
+  {
+    id: "cni-ancienne-verso",
+    texte: `Carte valable jusqu'au : 14.03.2029
+délivrée le : 15.03.2014
+par : PRÉFECTURE DU RHÔNE
+Signature de l'autorité
+Adresse : 12 rue des Exemples 69000 LYON`,
+    attendu: { type: "piece_identite", dossier: "identite", date_expiration: "2029-03-14", a_traiter: false, date_limite: null },
   },
   {
     id: "pension-paiement-verse",
