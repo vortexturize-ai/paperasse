@@ -24,6 +24,7 @@ import { syncReminders } from "./documents";
 import { sweepTempDirs } from "./files";
 import * as SecureStore from "./secureStore";
 import { cancelAllReminders, setReminderMode } from "./notifications";
+import { syncWidget } from "./widget";
 import { lockSuspended } from "./suspend";
 import { useNoScreenshots } from "./privacyScreen";
 import { applyKey, forgetDecoy, prepareVault, seedDecoy, type VaultConfig, type VaultKind } from "./vaultKey";
@@ -415,6 +416,7 @@ function ReminderSync({ decoy, discreet }: { decoy: boolean; discreet: boolean }
     setReminderMode({ muted: decoy, discreet });
     if (decoy) void cancelAllReminders();
     else void syncReminders(db, discreet).catch(() => undefined);
+    syncWidget(db);
   }, [db, decoy, discreet]);
   return null;
 }

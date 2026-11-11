@@ -19,6 +19,7 @@ import { CAPTURE_EVENT } from "../../lib/privacyScreen";
 import { feedbackPrefs, setFeedbackPrefs } from "../../lib/feedback";
 import { formatDate } from "../../lib/text";
 import { useVault } from "../../lib/vaultGate";
+import { pinWidget, widgetSupported } from "../../lib/widget";
 
 const LANGUAGES = Object.values(LANGUAGE_NAMES);
 
@@ -293,6 +294,31 @@ export default function Settings() {
           <Button label="Kit d’urgence pour un proche" icon="family" variant="secondary" onPress={() => router.push("/sauvegarde?mode=kit")} />
         </View>
       </Card>
+
+      {widgetSupported ? (
+        <Card>
+          <Text style={txt.strong}>Widget « Prochaine échéance »</Text>
+          <Text style={txt.small}>
+            Ta prochaine date limite ou expiration sur l’écran d’accueil, sans ouvrir l’app.{" "}
+            {vault.hasPin ? "Avec ton code secret, il ne dit jamais de quel papier il s’agit." : "Il montre le nom du papier : avec un code secret, il le cache."}
+          </Text>
+          <Button
+            label="Ajouter le widget"
+            icon="calendar"
+            variant="secondary"
+            style={{ marginTop: 8 }}
+            onPress={() =>
+              void pinWidget().then((ok) => {
+                if (!ok)
+                  void dialog.alert({
+                    title: "À ajouter à la main",
+                    message: "Appui long sur l’écran d’accueil, puis « Widgets », puis Paperasse.",
+                  });
+              })
+            }
+          />
+        </Card>
+      ) : null}
 
       <SectionTitle>Sons et vibrations</SectionTitle>
       <Card>

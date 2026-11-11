@@ -36,6 +36,7 @@ import { isSensitivePaper } from "../../engine/sensitive";
 import { EasyCard, ListenButton } from "../../components/Listen";
 import { useNoScreenshots } from "../../lib/privacyScreen";
 import { Tap } from "../../components/Tap";
+import { syncWidget } from "../../lib/widget";
 
 const STEP_COLORS = [colors.orange, "#38B6FF", colors.green, colors.sun, colors.lilac];
 
@@ -127,6 +128,7 @@ export default function DocumentScreen() {
   const saveEdit = async () => {
     await rememberCategory(db, doc, editCategory);
     await updateDocument(db, doc.id, { title: editTitle.trim() || doc.title, category: editCategory });
+    syncWidget(db);
     setEditing(false);
     await reload();
   };

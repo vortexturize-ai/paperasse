@@ -50,6 +50,9 @@ let mode = { muted: false, discreet: false };
 export function setReminderMode(next: { muted: boolean; discreet: boolean }): void {
   mode = next;
 }
+export function reminderMode(): Readonly<typeof mode> {
+  return mode;
+}
 
 /**
  * Remplace les rappels d'un document. Renvoie les nouveaux identifiants à enregistrer.

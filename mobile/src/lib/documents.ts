@@ -24,6 +24,7 @@ import { canFindTwoDDocInPhotos, findTwoDDoc } from "./twoDDocScan";
 import { codeFacts } from "../engine/twoDDoc";
 import { formatDate, todayIso } from "./text";
 import type { DocumentRecord, PendingPage } from "./types";
+import { syncWidget } from "./widget";
 
 export interface CreateOptions {
   /** Lire le papier avec le moteur (photos lues sur le téléphone, ou texte collé). */
@@ -119,6 +120,7 @@ export async function refreshReminders(db: SQLiteDatabase, id: string, only?: Re
   if (!doc) return;
   const ids = await scheduleReminders(doc, only);
   await updateDocument(db, id, { notificationIds: ids });
+  syncWidget(db);
 }
 
 /**
@@ -152,4 +154,5 @@ export async function removeDocument(db: SQLiteDatabase, doc: DocumentRecord): P
   const pages = (await getFiles(db, doc.id)).map((f) => f.path);
   await deleteDocumentRow(db, doc.id);
   deletePages(doc.id, pages);
+  syncWidget(db);
 }

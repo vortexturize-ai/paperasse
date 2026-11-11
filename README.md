@@ -75,6 +75,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 - **Partager un papier** : toutes ses pages réunies en un seul PDF, **protégé par un mot de passe** (AES-256, proposé tout fait, à donner à part). Même protection pour les dossiers prêts et le dossier pour un accompagnant.
 - **Famille et aidants** : un profil par proche (« Maman », un enfant…) pour gérer aussi leurs papiers.
 - **Dossier pour un accompagnant** (assistante sociale, CCAS, France Services) : les papiers choisis, les tiens ou ceux d'un proche, en un seul PDF avec le résumé de chacun en première page et un filigrane au nom de la personne.
+- **Widget « Prochaine échéance »** (Android) : sur l’écran d’accueil du téléphone, la prochaine date limite ou expiration (« Dans 3 jours », « + 2 autres bientôt »), sans ouvrir l’app. Avec un code secret, il ne dit jamais de quel papier il s’agit ; coffre leurre ouvert, il reste vide.
 - **Doux au toucher** : les boutons s'enfoncent avec un petit son feutré et une vibration légère, les écrans glissent. Muet en mode silencieux, jamais par-dessus ta musique, réglable dans *Réglages → Sons et vibrations* ; les mouvements s'arrêtent si ton téléphone demande de réduire les animations. Le pavé du code secret vibre mais ne fait aucun bruit.
 
 ## Protéger
@@ -160,7 +161,7 @@ L'app est écrite avec Expo et React Native, donc prévue pour iPhone, mais elle
 
 ## Pour les développeurs
 
-**Pile** : Expo SDK 58, React Native 0.88, React 19, TypeScript strict, Expo Router, expo-sqlite avec SQLCipher, expo-secure-store, ML Kit (lecture du texte, modèle intégré à l'app), pdf-lib, fflate, @noble/hashes, @noble/ciphers, expo-audio et expo-haptics (sons et vibrations de l'interface).
+**Pile** : Expo SDK 58, React Native 0.88, React 19, TypeScript strict, Expo Router, expo-sqlite avec SQLCipher, expo-secure-store, ML Kit (lecture du texte, modèle intégré à l'app), pdf-lib, fflate, @noble/hashes, @noble/ciphers, expo-audio et expo-haptics (sons et vibrations de l'interface), react-native-android-widget (widget Android).
 
 ### Démarrer
 
@@ -197,6 +198,7 @@ npm run fiabilite         # rapport de fiabilité de l'analyse
 | `mobile/src/lib/` | Base de données, fichiers, coffre chiffré, sauvegarde, rappels |
 | `mobile/src/app/` | Écrans (Expo Router) |
 | `mobile/src/components/` | Interface (thème, boutons, mascotte, icônes) |
+| `mobile/src/widget/` | Dessin du widget Android « Prochaine échéance » (son contenu : `src/lib/widgetData.ts`, testé) |
 | `mobile/plugins/` | Plugins de configuration Expo (modèle de lecture intégré, CMake) |
 | `mobile/scripts/` | Outils : rapport de fiabilité, images de la marque, sons de l'interface (`npm run sounds` les refabrique dans `assets/sounds/`) |
 | `mobile/test/` | Tests et corpus de papiers fictifs annotés |

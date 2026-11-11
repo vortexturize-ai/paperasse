@@ -102,6 +102,30 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/fredoka/600SemiBold/Fredoka_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/nunito/700Bold/Nunito_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/nunito/800ExtraBold/Nunito_800ExtraBold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Echeance",
+              "label": "Prochaine échéance",
+              "description": "Ta prochaine date limite ou expiration, sans ouvrir l’app",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 10800000,
+              "previewImage": "./assets/widget-preview.png"
+            }
+          ]
+        }
       ]
     ],
     "scheme": "paperasse"
