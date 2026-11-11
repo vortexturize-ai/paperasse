@@ -41,4 +41,7 @@ test("nom du dossier choisi : lisible quelle que soit l'adresse", async () => {
   assert.equal(folderLabelFromUri("file:///storage/emulated/0/Download/"), "Download");
   assert.equal(folderLabelFromUri(""), "ton dossier");
   assert.equal(folderLabelFromUri("%E0%A4%A", "ailleurs"), "%E0%A4%A");
+  // Nom rendu par Android pour un dossier choisi : identifiant brut.
+  assert.equal(folderLabelFromUri("primary:Documents"), "Documents");
+  assert.equal(folderLabelFromUri("encoded=ABCDEF0123456789abcdef", "Drive"), "Drive");
 });

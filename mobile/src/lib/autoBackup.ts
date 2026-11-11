@@ -1,4 +1,4 @@
-import { Directory, File } from "expo-file-system";
+import { Directory, File, FileMode } from "expo-file-system";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { Platform } from "react-native";
 import { autoBackupDue, backupFileName, backupNudge, backupsToDelete, folderLabelFromUri, type BackupNudge, type BackupState } from "../engine/backupPlan";
@@ -56,13 +56,15 @@ export async function snoozeBackupNudge(db: SQLiteDatabase, days = 7): Promise<v
 
 /** Nom lisible du dossier choisi (« Paperasse », « Download »…). */
 export function folderLabel(uri: string): string {
+  const fromUri = folderLabelFromUri(uri);
   try {
     const name = new Directory(uri).name;
-    if (name && !/%[0-9A-Fa-f]{2}/.test(name)) return name;
+    // Android rend parfois l'identifiant du dossier (« primary:Documents ») : même nettoyage que l'adresse.
+    if (name && !/%[0-9A-Fa-f]{2}/.test(name)) return folderLabelFromUri(name, fromUri);
   } catch {
     // on retombe sur le nom tiré de l'adresse
   }
-  return folderLabelFromUri(uri);
+  return fromUri;
 }
 
 /** Fait choisir un dossier (Google Drive, clé USB, carte SD…) : l'accès est gardé pour les prochaines fois. */
@@ -82,6 +84,32 @@ export async function chooseBackupFolder(db: SQLiteDatabase): Promise<string | n
 export async function stopAutoBackup(db: SQLiteDatabase): Promise<void> {
   await setSetting(db, "backup_folder", "");
   await setSetting(db, "backup_error", "");
+}
+
+/** 1 Mo à la fois : une grosse sauvegarde ne passe jamais d'un bloc en mémoire. */
+const COPY_CHUNK = 1 << 20;
+
+/**
+ * Recopie la sauvegarde dans le fichier créé dans le dossier choisi. Pas `File.copy` : vers un dossier choisi
+ * (Android), elle efface d'abord le fichier qu'on vient d'y créer puis écrit dans le vide (« Missing file »).
+ */
+async function copyInto(src: File, dest: File): Promise<void> {
+  const from = src.open(FileMode.ReadOnly);
+  try {
+    const to = dest.open(FileMode.WriteOnly);
+    try {
+      for (;;) {
+        const chunk = await from.readBytes(COPY_CHUNK);
+        if (chunk.length === 0) break;
+        await to.writeBytes(chunk);
+      }
+    } finally {
+      to.close();
+    }
+  } finally {
+    from.close();
+  }
+  if (dest.size !== src.size) throw new Error("Copie incomplète");
 }
 
 export type AutoResult = "fait" | "pas_besoin" | "pas_de_dossier" | "erreur";
@@ -116,7 +144,16 @@ async function runAutoBackupNow(db: SQLiteDatabase, kind: VaultKind, force: bool
     while (taken.has(backupFileName(today, n))) n++;
     const name = backupFileName(today, n);
     const dest = dir.createFile(name, "application/octet-stream");
-    await file.copy(dest, { overwrite: true });
+    try {
+      await copyInto(file, dest);
+    } catch (e) {
+      try {
+        dest.delete(); // pas de sauvegarde à moitié écrite qui passerait pour bonne
+      } catch {
+        // rien à effacer
+      }
+      throw e;
+    }
 
     let written: string[] = [];
     try {
