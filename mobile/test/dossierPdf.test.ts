@@ -113,3 +113,26 @@ test("raison affichée quand un papier ne convient pas : périmé, trop ancien, 
   assert.equal(whyNot({ ...base, docDate: "2026-08-01", expiry: "2026-10-01", text: "impot sur le revenu" }, req, "2026-11-10"), "perime");
   assert.equal(whyNot({ ...base, docDate: "2026-08-01", expiry: null, text: "Impôt sur le revenu" }, req, "2026-11-10"), null);
 });
+
+test("un papier de plusieurs pages partagé en un seul PDF : sans garde ni filigrane, pages dans l'ordre", async () => {
+  const { buildPagesPdf, safeFileName } = await import("../src/engine/dossierPdf.ts");
+  const r = await buildPagesPdf({
+    title: "Fiche de paie – Octobre",
+    pages: [{ kind: "jpeg", bytes: jpeg(800, 1200) }, { kind: "pdf", bytes: await letterPdf(2, "Bulletin") }, { kind: "png", bytes: png(20, 20) }],
+  });
+  assert.equal(r.pages, 4);
+  assert.equal(r.skipped.length, 0);
+  const loaded = await PDFDocument.load(r.bytes);
+  assert.equal(loaded.getPageCount(), 4);
+  assert.ok((loaded.getTitle() ?? "").startsWith("Fiche de paie"));
+  const text = extractPdfText(r.bytes).text;
+  assert.doesNotMatch(text, /page \d\/\d|Uniquement pour|Préparé le/);
+  assert.ok(text.includes("Bulletin 1") && text.includes("Bulletin 2"));
+  const partial = await buildPagesPdf({ title: "Mixte", pages: [{ kind: "jpeg", bytes: Uint8Array.from([1]) }, { kind: "png", bytes: png(10, 10) }] });
+  assert.equal(partial.pages, 1);
+  assert.equal(partial.skipped.length, 1);
+  await assert.rejects(buildPagesPdf({ title: "Vide", pages: [{ kind: "jpeg", bytes: Uint8Array.from([1]) }] }), /Aucune page/);
+  assert.equal(safeFileName('  Avis: "impôt" 2026 / CAF?  '), "Avis impôt 2026 CAF");
+  assert.equal(safeFileName("..."), "Papier");
+  assert.equal(safeFileName("x".repeat(100)).length, 60);
+});

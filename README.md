@@ -72,6 +72,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 - **Moments de vie** : déménagement, perte d'emploi, nouveau travail, naissance, mariage ou Pacs, retraite, décès d'un proche. Les démarches dans l'ordre, avec les papiers que tu as déjà.
 - **Dossiers prêts** (location, prêt, titre de séjour, embauche) : ce qui est prêt, ce qui manque, ce qu'**on n'a pas le droit de te demander**, puis un seul PDF avec un **filigrane** sur chaque page (« Uniquement pour la location d'un logement — Agence Martin — 10/11/2026 »).
 - **Argent à récupérer**, durées de conservation (« tu peux jeter »), recherche dans tous tes papiers.
+- **Partager un papier** : sa page telle quelle, ou toutes ses pages réunies en un seul PDF.
 - **Famille et aidants** : un profil par proche (« Maman », un enfant…) pour gérer aussi leurs papiers.
 
 ## Protéger

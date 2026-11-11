@@ -160,7 +160,7 @@ export function deleteDocumentFiles(docId: string): void {
 }
 
 /** Dossiers temporaires de l'app (imports, PDF, restaurations, sauvegardes) : vidés à l'ouverture du coffre. */
-const TEMP_DIRS = ["import", "pdf", "sauvegardes", "dossiers"];
+const TEMP_DIRS = ["import", "pdf", "sauvegardes", "dossiers", "partage"];
 
 /** Efface ce qu'une session interrompue a pu laisser dans le cache (pages déchiffrées d'une restauration, copies). */
 export function sweepTempDirs(): void {

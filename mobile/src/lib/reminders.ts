@@ -2,6 +2,8 @@ import { formatDate } from "./text.ts";
 import type { DocumentRecord } from "./types.ts";
 
 export const REMINDER_HOUR = 9; // rappels à 9 h, heure du téléphone
+/** iOS ne garde que les 64 rappels programmés les plus proches : on en programme au plus 60 pour tout le coffre (marge). */
+export const MAX_SCHEDULED = 60;
 /** Jours avant une date limite. */
 export const DEADLINE_OFFSETS = [7, 2, 0];
 /** Jours avant une expiration (pièce d'identité, contrat, assurance…). */
@@ -53,4 +55,16 @@ export function reminderPlans(
     }
   }
   return plans;
+}
+
+/**
+ * Parmi les rappels de tous les papiers, les `max` plus proches dans le temps (à date égale : ordre des papiers,
+ * puis ordre des rappels). Chaque papier reçoit sa liste, vide s'il n'en garde aucun.
+ */
+export function selectReminders<T extends { date: Date }>(perDoc: { id: string; plans: T[] }[], max = MAX_SCHEDULED): Map<string, T[]> {
+  const all = perDoc.flatMap((d, order) => d.plans.map((plan, i) => ({ id: d.id, plan, order, i })));
+  all.sort((a, b) => a.plan.date.getTime() - b.plan.date.getTime() || a.order - b.order || a.i - b.i);
+  const kept = new Map<string, T[]>(perDoc.map((d) => [d.id, []]));
+  for (const e of all.slice(0, Math.max(0, max))) kept.get(e.id)?.push(e.plan);
+  return kept;
 }

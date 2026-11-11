@@ -19,6 +19,7 @@ import { deleteDocumentFiles, deletePages, storePages, uriFor } from "./files";
 import { cancelReminders, scheduledReminderIds, scheduleReminders } from "./notifications";
 import { readPdf } from "./pdfread";
 import { readImages } from "./ocr";
+import { reminderPlans, selectReminders, type ReminderPlan } from "./reminders";
 import { formatDate, todayIso } from "./text";
 import type { DocumentRecord, PendingPage } from "./types";
 
@@ -100,28 +101,30 @@ export async function rememberCategory(db: SQLiteDatabase, doc: DocumentRecord, 
   if (doc.issuer && category !== doc.category) await setSetting(db, `learn:${fold(doc.issuer)}`, category);
 }
 
-export async function refreshReminders(db: SQLiteDatabase, id: string): Promise<void> {
+export async function refreshReminders(db: SQLiteDatabase, id: string, only?: ReminderPlan[]): Promise<void> {
   const doc = await getDocument(db, id);
   if (!doc) return;
-  const ids = await scheduleReminders(doc);
+  const ids = await scheduleReminders(doc, only);
   await updateDocument(db, id, { notificationIds: ids });
 }
 
 /**
- * À l'ouverture du vrai coffre : reprogramme les rappels effacés (par le coffre leurre) ou écrits dans
- * l'autre mode (discret / détaillé). Les papiers sans rappel manquant ne sont pas touchés.
+ * À l'ouverture du vrai coffre : reprogramme les rappels effacés (par le coffre leurre), déjà passés, ou écrits
+ * dans l'autre mode (discret / détaillé), et applique le plafond du coffre (iOS ne garde que les 64 rappels les
+ * plus proches : on choisit nous-mêmes les plus proches, pour tous les papiers). Un papier dont rien ne change n'est pas touché.
  */
 export async function syncReminders(db: SQLiteDatabase, discreet: boolean): Promise<void> {
   const wanted = discreet ? "discret" : "detail";
   const modeChanged = (await getSetting(db, "reminders_mode")) !== wanted;
   const scheduled = await scheduledReminderIds();
-  const today = todayIso();
-  for (const doc of await listAll(db)) {
-    const upcoming = (doc.deadline !== null && !doc.isDone && doc.deadline >= today) || (doc.expiryDate !== null && doc.expiryDate >= today);
+  const docs = await listAll(db);
+  const now = new Date();
+  const kept = selectReminders(docs.map((d) => ({ id: d.id, plans: reminderPlans(d, discreet, now) })));
+  for (const doc of docs) {
+    const plans = kept.get(doc.id) ?? [];
+    if (plans.length === 0 && doc.notificationIds.length === 0) continue;
     const missing = doc.notificationIds.some((id) => !scheduled.has(id));
-    if ((upcoming && (modeChanged || missing || doc.notificationIds.length === 0)) || (!upcoming && doc.notificationIds.length > 0 && missing)) {
-      await refreshReminders(db, doc.id);
-    }
+    if (modeChanged || missing || doc.notificationIds.length !== plans.length) await refreshReminders(db, doc.id, plans);
   }
   if (modeChanged) await setSetting(db, "reminders_mode", wanted);
 }

@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
 import { Platform } from "react-native";
-import { reminderPlans } from "./reminders";
+import { reminderPlans, type ReminderPlan } from "./reminders";
 import type { DocumentRecord } from "./types";
 
 const CHANNEL_ID = "echeances";
@@ -53,13 +53,13 @@ export function setReminderMode(next: { muted: boolean; discreet: boolean }): vo
 
 /**
  * Remplace les rappels d'un document. Renvoie les nouveaux identifiants à enregistrer.
- * Aucun rappel si le courrier est marqué « traité ».
+ * Aucun rappel si le courrier est marqué « traité ». `only` : rappels déjà choisis (plafond du coffre).
  */
-export async function scheduleReminders(doc: DocumentRecord): Promise<string[]> {
+export async function scheduleReminders(doc: DocumentRecord, only?: ReminderPlan[]): Promise<string[]> {
   if (!remindersSupported) return [];
   await cancelReminders(doc.notificationIds);
   if (mode.muted) return [];
-  const plans = reminderPlans(doc, mode.discreet);
+  const plans = only ?? reminderPlans(doc, mode.discreet);
   if (plans.length === 0 || !(await ensurePermission())) return [];
 
   const channel = (await channelReady) ? { channelId: CHANNEL_ID } : {};
