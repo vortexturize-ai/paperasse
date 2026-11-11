@@ -88,6 +88,8 @@ export type SettingKey =
   | "lock_enabled"
   | "capture_block"
   | "easy_read"
+  | "sound_enabled"
+  | "haptics_enabled"
   | "backup_last"
   | "reminders_mode"
   | "backup_papers"

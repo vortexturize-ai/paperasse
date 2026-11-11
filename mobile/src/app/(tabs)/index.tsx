@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Mascot, Wordmark } from "../../components/Brand";
 import { Screen } from "../../components/Screen";
 import { colors, fonts, pop, tones } from "../../components/theme";
@@ -18,6 +18,7 @@ import { WhoPills } from "../../components/WhoPills";
 import { daysUntil, formatDate, todayIso } from "../../lib/text";
 import { toPaper } from "../../lib/vault";
 import { useFocusData } from "../../lib/useFocusData";
+import { Tap } from "../../components/Tap";
 
 async function loadHome(db: SQLiteDatabase) {
   const [toDo, expiring, recent, sender, all, people, nudge] = await Promise.all([
@@ -153,7 +154,7 @@ export default function Home() {
             <Tile icon="shield" label="Vérifier un message" color={tones.red.bg} onPress={() => router.push("/arnaque")} />
           </View>
           {data.money.length > 0 ? (
-            <Pressable accessibilityRole="button" onPress={() => router.push("/argent")}>
+            <Tap accessibilityRole="button" onPress={() => router.push("/argent")}>
               <Card tone="green">
                 <View style={styles.rowCenter}>
                   <Icon name="euro" size={24} color={tones.green.fg} />
@@ -164,10 +165,10 @@ export default function Home() {
                 </View>
                 <Text style={txt.small}>{data.money[0].title}</Text>
               </Card>
-            </Pressable>
+            </Tap>
           ) : null}
           {data.upcoming.map((e, i) => (
-            <Pressable key={i} accessibilityRole="button" onPress={() => router.push("/calendrier")}>
+            <Tap key={i} accessibilityRole="button" onPress={() => router.push("/calendrier")}>
               <Card flat style={styles.rowCenter}>
                 <Icon name="calendar" size={22} />
                 <View style={{ flex: 1 }}>
@@ -176,7 +177,7 @@ export default function Home() {
                 </View>
                 <Chip {...deadlineChip(e.date)} />
               </Card>
-            </Pressable>
+            </Tap>
           ))}
         </>
       ) : null}
@@ -213,10 +214,10 @@ export default function Home() {
 
 function Tile({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.tile, { backgroundColor: color }, pop(3), pressed && { opacity: 0.8 }]}>
+    <Tap accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.tile, { backgroundColor: color }, pop(3), pressed && { opacity: 0.8 }]}>
       <Icon name={icon} size={26} />
       <Text style={[txt.strong, { textAlign: "center" }]}>{label}</Text>
-    </Pressable>
+    </Tap>
   );
 }
 

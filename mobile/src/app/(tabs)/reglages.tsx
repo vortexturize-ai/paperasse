@@ -16,6 +16,7 @@ import { useLock } from "../../lib/lock";
 import { ensurePermission, remindersSupported } from "../../lib/notifications";
 import { canReadImages } from "../../lib/ocr";
 import { CAPTURE_EVENT } from "../../lib/privacyScreen";
+import { feedbackPrefs, setFeedbackPrefs } from "../../lib/feedback";
 import { formatDate } from "../../lib/text";
 import { useVault } from "../../lib/vaultGate";
 
@@ -30,6 +31,8 @@ export default function Settings() {
   const [captureEverywhere, setCaptureEverywhere] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [easyRead, setEasyRead] = useState(false);
+  const [sound, setSound] = useState(() => feedbackPrefs().sound);
+  const [haptics, setHaptics] = useState(() => feedbackPrefs().haptics);
   const [people, setPeople] = useState<Person[]>([]);
   const [newName, setNewName] = useState("");
   const [newRelation, setNewRelation] = useState<Relation>("enfant");
@@ -288,6 +291,40 @@ export default function Settings() {
           <Button label="Sauvegarder mes papiers" icon="shield" variant="sun" onPress={() => router.push("/sauvegarde")} />
           <Button label="Restaurer une sauvegarde" icon="refresh" variant="secondary" onPress={() => router.push("/sauvegarde?mode=restaurer")} />
           <Button label="Kit d’urgence pour un proche" icon="family" variant="secondary" onPress={() => router.push("/sauvegarde?mode=kit")} />
+        </View>
+      </Card>
+
+      <SectionTitle>Sons et vibrations</SectionTitle>
+      <Card>
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <Text style={txt.strong}>Sons des boutons</Text>
+            <Text style={txt.small}>Petits sons doux. Muets quand le téléphone est en silencieux, et jamais par-dessus ta musique.</Text>
+          </View>
+          <Toggle
+            value={sound}
+            onChange={(on) => {
+              setSound(on);
+              setFeedbackPrefs({ sound: on });
+              void setSetting(db, "sound_enabled", on ? "1" : "0");
+            }}
+            label="Sons des boutons"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <Text style={txt.strong}>Vibrations légères</Text>
+            <Text style={txt.small}>Une petite vibration quand tu touches un bouton.</Text>
+          </View>
+          <Toggle
+            value={haptics}
+            onChange={(on) => {
+              setHaptics(on);
+              setFeedbackPrefs({ haptics: on });
+              void setSetting(db, "haptics_enabled", on ? "1" : "0");
+            }}
+            label="Vibrations légères"
+          />
         </View>
       </Card>
 

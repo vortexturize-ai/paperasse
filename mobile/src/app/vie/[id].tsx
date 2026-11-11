@@ -2,7 +2,7 @@ import { goBack } from "../../lib/nav";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { DateField } from "../../components/DateField";
 import { Icon } from "../../components/Icon";
 import { Screen } from "../../components/Screen";
@@ -14,6 +14,7 @@ import { getSetting, setSetting } from "../../lib/db";
 import { formatDate, todayIso } from "../../lib/text";
 import { useFocusData } from "../../lib/useFocusData";
 import { loadPapers } from "../../lib/vault";
+import { Tap } from "../../components/Tap";
 
 export default function LifeEventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,10 +70,10 @@ export default function LifeEventScreen() {
           <Text style={txt.body}>{s.step.detail}</Text>
           {s.step.site ? <Text style={[txt.small, { color: tones.blue.fg }]}>Site officiel : {s.step.site}</Text> : null}
           {s.papers.map((p) => (
-            <Pressable key={p.id} accessibilityRole="button" onPress={() => router.push(`/document/${p.id}`)} style={styles.paper}>
+            <Tap key={p.id} accessibilityRole="button" onPress={() => router.push(`/document/${p.id}`)} style={styles.paper}>
               <Icon name="check" size={18} color={tones.green.fg} />
               <Text style={[txt.small, { flex: 1, color: tones.green.fg }]}>Dans ton coffre : {p.title}</Text>
-            </Pressable>
+            </Tap>
           ))}
           {s.missing.length ? (
             <Text style={[txt.small, { color: tones.orange.fg }]}>Pas encore dans ton coffre : {s.missing.map((t) => DOC_TYPES[t]).join(", ")}</Text>

@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router, usePreventRemove } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useRef, useState } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../components/Dialog";
 import { Icon, type IconName } from "../components/Icon";
 import { Screen } from "../components/Screen";
@@ -12,6 +12,7 @@ import { border, colors, fonts, pop } from "../components/theme";
 import { Button, Card, Pill, SpeechBubble, txt } from "../components/ui";
 import { CATEGORIES, CATEGORY_KEYS, type Category } from "../lib/categories";
 import { getSetting } from "../lib/db";
+import { feedback } from "../lib/feedback";
 import { createDocument } from "../lib/documents";
 import { PROBLEM_TEXT } from "../engine/scan";
 import { discardPages, discardTemp, prepareImage, preparePdf } from "../lib/files";
@@ -19,6 +20,7 @@ import { inspectPhoto, prepareScan, prepareSystemScanPage, systemScan } from "..
 import { withLockSuspended } from "../lib/lock";
 import { canReadImages } from "../lib/ocr";
 import type { PendingPage } from "../lib/types";
+import { Tap } from "../components/Tap";
 
 const MAX_PAGES = 10;
 const MAX_TEXT = 50_000;
@@ -37,7 +39,7 @@ function SourceTile({
   disabled: boolean;
 }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
@@ -47,7 +49,7 @@ function SourceTile({
     >
       <Icon name={icon} size={26} strokeWidth={2.3} />
       <Text style={[txt.strong, styles.tileLabel]}>{label}</Text>
-    </Pressable>
+    </Tap>
   );
 }
 
@@ -230,7 +232,7 @@ export default function AddDocument() {
           message: `${analysisError}\n\nIl est bien rangé : tu peux le renommer et choisir son dossier.`,
           mood: "worried",
         });
-      }
+      } else feedback("success");
       router.replace(`/document/${id}`);
     } catch (e) {
       await dialog.alert({ title: "Enregistrement impossible", message: e instanceof Error ? e.message : "Erreur inconnue.", mood: "worried" });
@@ -250,7 +252,7 @@ export default function AddDocument() {
             : "Prends ta lettre en photo, je m’occupe du reste !"}
       </SpeechBubble>
 
-      <Pressable
+      <Tap
         accessibilityRole="button"
         accessibilityLabel="Prendre en photo"
         accessibilityState={{ disabled: full }}
@@ -265,7 +267,7 @@ export default function AddDocument() {
           <Text style={[txt.h2, { fontSize: 22 }]}>Prendre en photo</Text>
           <Text style={[txt.strong, { fontSize: 14, color: "#3D2300" }]}>Une photo par page</Text>
         </View>
-      </Pressable>
+      </Tap>
 
       <View style={styles.grid}>
         <SourceTile label="Mes photos" icon="image" color={colors.sky} onPress={() => void pickPhotos()} disabled={full} />
@@ -323,7 +325,7 @@ export default function AddDocument() {
                 <View style={styles.pageNumber}>
                   <Text style={[txt.strong, { fontSize: 12, lineHeight: 15 }]}>{i + 1}</Text>
                 </View>
-                <Pressable
+                <Tap
                   accessibilityRole="button"
                   accessibilityLabel={`Retirer la page ${i + 1}`}
                   onPress={() => {
@@ -334,13 +336,13 @@ export default function AddDocument() {
                   hitSlop={10}
                 >
                   <Icon name="close" size={14} color="#FFFFFF" strokeWidth={3} />
-                </Pressable>
+                </Tap>
               </View>
             ))}
             {room > 0 ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Ajouter une page" onPress={() => void takePhoto()} style={styles.addPage}>
+              <Tap accessibilityRole="button" accessibilityLabel="Ajouter une page" onPress={() => void takePhoto()} style={styles.addPage}>
                 <Icon name="plus" size={24} strokeWidth={2.8} />
-              </Pressable>
+              </Tap>
             ) : null}
           </ScrollView>
         </View>

@@ -9,6 +9,7 @@ import { Screen } from "../components/Screen";
 import { tones } from "../components/theme";
 import { Button, Card, EmptyState, Pill, SpeechBubble, txt } from "../components/ui";
 import { getSetting } from "../lib/db";
+import { feedback } from "../lib/feedback";
 import { importItems, kindOf, type ImportReport, type IncomingItem } from "../lib/importer";
 import { withLockSuspended } from "../lib/lock";
 import { goBack } from "../lib/nav";
@@ -58,6 +59,7 @@ export default function ReceiveScreen() {
       const language = (await getSetting(db, "language")) ?? "français";
       const r = await importItems(db, items, { together, language });
       setReport(r);
+      if (r.created.length) feedback("success");
       if (source !== "fichiers") share.clearSharedPayloads();
     } finally {
       setBusy(false);

@@ -11,6 +11,7 @@ import { Mascot, Wordmark } from "../components/Brand";
 import { DialogProvider } from "../components/Dialog";
 import { colors, fonts } from "../components/theme";
 import { getSetting } from "../lib/db";
+import { preloadSounds, setFeedbackPrefs } from "../lib/feedback";
 import { LockGate } from "../lib/lock";
 import { remindersSupported, setupNotifications } from "../lib/notifications";
 import { CAPTURE_EVENT, useNoScreenshots } from "../lib/privacyScreen";
@@ -51,6 +52,26 @@ function ScreenshotGuard() {
   useNoScreenshots(everywhere, "partout");
   return null;
 }
+
+/** Réglages « Sons » et « Vibrations » du coffre ouvert, et sons chargés à l'avance. */
+function FeedbackPrefs() {
+  const db = useSQLiteContext();
+  useEffect(() => {
+    let alive = true;
+    void Promise.all([getSetting(db, "sound_enabled"), getSetting(db, "haptics_enabled")]).then(([sound, haptics]) => {
+      if (!alive) return;
+      setFeedbackPrefs({ sound: sound !== "0", haptics: haptics !== "0" });
+      preloadSounds();
+    });
+    return () => {
+      alive = false;
+    };
+  }, [db]);
+  return null;
+}
+
+/** Fenêtre qui monte du bas (Android) ; feuille glissante native sur iPhone et iPad. */
+const MODAL = { headerShown: false, presentation: "modal", ...(Platform.OS === "android" ? { animation: "slide_from_bottom" as const } : {}) } as const;
 
 /**
  * Rideau opaque dès que l'app n'est plus au premier plan : l'aperçu du sélecteur d'apps (iOS, Android)
@@ -93,6 +114,7 @@ export default function RootLayout() {
       <VaultGate>
         <LockGate>
           <ScreenshotGuard />
+          <FeedbackPrefs />
           <DialogProvider>
             <StatusBar style="dark" />
             <Stack
@@ -105,18 +127,22 @@ export default function RootLayout() {
                 headerBackButtonDisplayMode: "minimal",
                 // Chaque écran dessine son propre en-tête (composant Screen).
                 headerShown: false,
+                // Glissement natif (iPhone) ou façon iPhone (Android) ; retour en glissant depuis n'importe où sur iPhone.
+                animation: Platform.OS === "ios" ? "default" : "ios_from_right",
+                gestureEnabled: true,
+                fullScreenGestureEnabled: true,
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="ajouter" options={{ headerShown: false, presentation: "modal" }} />
+              <Stack.Screen name="ajouter" options={MODAL} />
               <Stack.Screen name="document/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="dossier/[categorie]" options={{ headerShown: false }} />
-              <Stack.Screen name="reponse/[id]" options={{ headerShown: false, presentation: "modal" }} />
-              <Stack.Screen name="code" options={{ headerShown: false, presentation: "modal" }} />
-              <Stack.Screen name="sauvegarde" options={{ headerShown: false, presentation: "modal" }} />
-              <Stack.Screen name="deuxdoc" options={{ headerShown: false, presentation: "modal" }} />
-              <Stack.Screen name="accompagnant" options={{ headerShown: false, presentation: "modal" }} />
-              <Stack.Screen name="partager/[id]" options={{ headerShown: false, presentation: "modal" }} />
+              <Stack.Screen name="reponse/[id]" options={MODAL} />
+              <Stack.Screen name="code" options={MODAL} />
+              <Stack.Screen name="sauvegarde" options={MODAL} />
+              <Stack.Screen name="deuxdoc" options={MODAL} />
+              <Stack.Screen name="accompagnant" options={MODAL} />
+              <Stack.Screen name="partager/[id]" options={MODAL} />
             </Stack>
             <ReminderTaps />
           </DialogProvider>

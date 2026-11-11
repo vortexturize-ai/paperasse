@@ -2,7 +2,7 @@ import { goBack } from "../../lib/nav";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
 import { PdfPasswordCard, usePdfPassword } from "../../components/PdfPassword";
@@ -16,6 +16,7 @@ import { useNoScreenshots } from "../../lib/privacyScreen";
 import { formatDate, todayIso } from "../../lib/text";
 import { useFocusData } from "../../lib/useFocusData";
 import { loadPapers } from "../../lib/vault";
+import { Tap } from "../../components/Tap";
 
 const STATUS = {
   ok: { label: "Prêt", tone: "green" as const },
@@ -73,13 +74,13 @@ export default function DossierScreen() {
           </View>
           <Text style={txt.small}>{it.requirement.hint}</Text>
           {it.papers.map((p) => (
-            <Pressable key={p.id} accessibilityRole="button" onPress={() => router.push(`/document/${p.id}`)} style={styles.paper}>
+            <Tap key={p.id} accessibilityRole="button" onPress={() => router.push(`/document/${p.id}`)} style={styles.paper}>
               <Icon name="check" size={18} color={tones.green.fg} />
               <Text style={[txt.small, { flex: 1, color: tones.green.fg }]}>{p.title}</Text>
-            </Pressable>
+            </Tap>
           ))}
           {it.tooOld.map((p) => (
-            <Pressable key={p.id} accessibilityRole="button" onPress={() => router.push(`/document/${p.id}`)} style={styles.paper}>
+            <Tap key={p.id} accessibilityRole="button" onPress={() => router.push(`/document/${p.id}`)} style={styles.paper}>
               <Icon name="warning" size={18} color={tones.orange.fg} />
               <Text style={[txt.small, { flex: 1, color: tones.orange.fg }]}>
                 {p.title} : {(() => {
@@ -89,7 +90,7 @@ export default function DossierScreen() {
                   return "ne convient pas pour cette ligne";
                 })()}
               </Text>
-            </Pressable>
+            </Tap>
           ))}
         </Card>
       ))}

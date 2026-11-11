@@ -3,7 +3,7 @@ import { File } from "expo-file-system";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../components/Dialog";
 import { Icon } from "../components/Icon";
 import { Screen } from "../components/Screen";
@@ -32,6 +32,7 @@ import { withLockSuspended } from "../lib/suspend";
 import { formatDate } from "../lib/text";
 import type { DocumentRecord } from "../lib/types";
 import { useVault } from "../lib/vaultGate";
+import { Tap } from "../components/Tap";
 
 type Mode = "sauvegarde" | "restaurer" | "kit";
 
@@ -152,9 +153,9 @@ function Backup() {
       ) : (
         <Button label={busy ? progress || "Je prépare…" : "Créer la sauvegarde"} icon="shield" variant="sun" size="lg" loading={busy} onPress={() => void make()} />
       )}
-      <Pressable accessibilityRole="button" onPress={() => void renew()} style={styles.link}>
+      <Tap accessibilityRole="button" onPress={() => void renew()} style={styles.link}>
         <Text style={styles.linkText}>Changer de clé de secours</Text>
-      </Pressable>
+      </Tap>
 
       <AutoSection />
     </>
@@ -231,9 +232,9 @@ function AutoSection() {
           </Text>
           <Button label={busy ? "Je sauvegarde…" : "Sauvegarder maintenant"} icon="shield" variant="sun" loading={busy} onPress={() => void run(true)} style={{ marginTop: 10 }} />
           <Button label="Changer de dossier" icon="folder" variant="secondary" onPress={() => void choose()} style={{ marginTop: 8 }} />
-          <Pressable accessibilityRole="button" onPress={() => void stop()} style={styles.link}>
+          <Tap accessibilityRole="button" onPress={() => void stop()} style={styles.link}>
             <Text style={styles.linkText}>Arrêter la sauvegarde automatique</Text>
-          </Pressable>
+          </Tap>
         </Card>
       ) : (
         <>
@@ -472,12 +473,12 @@ function Kit() {
           {docs.map((d) => {
             const on = chosen.has(d.id);
             return (
-              <Pressable key={d.id} onPress={() => toggle(d.id)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={styles.row}>
+              <Tap key={d.id} sound="select" depth={1} onPress={() => toggle(d.id)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={styles.row}>
                 <View style={[styles.box, on && styles.boxOn]}>{on ? <Icon name="check" size={16} strokeWidth={3} /> : null}</View>
                 <Text style={[txt.body, { flex: 1 }]} numberOfLines={1}>
                   {d.title}
                 </Text>
-              </Pressable>
+              </Tap>
             );
           })}
         </Card>

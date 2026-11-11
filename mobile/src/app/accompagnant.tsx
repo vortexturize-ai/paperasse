@@ -1,7 +1,7 @@
 import type { File } from "expo-file-system";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../components/Dialog";
 import { Icon } from "../components/Icon";
 import { PdfPasswordCard, usePdfPassword } from "../components/PdfPassword";
@@ -19,6 +19,7 @@ import { goBack } from "../lib/nav";
 import { useNoScreenshots } from "../lib/privacyScreen";
 import { formatDate, todayIso } from "../lib/text";
 import type { DocumentRecord } from "../lib/types";
+import { Tap } from "../components/Tap";
 
 /** Titre du dossier selon la personne concernée. */
 function dossierTitle(who: Who, people: Person[]): string {
@@ -162,7 +163,7 @@ export default function CompanionScreen() {
             const on = chosen.has(d.id);
             const cat = CATEGORIES[categoryOf(d.category)];
             return (
-              <Pressable key={d.id} onPress={() => toggle(d.id)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={styles.row}>
+              <Tap key={d.id} sound="select" depth={1} onPress={() => toggle(d.id)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={styles.row}>
                 <View style={[styles.box, on && styles.boxOn]}>{on ? <Icon name="check" size={16} strokeWidth={3} /> : null}</View>
                 <View style={{ flex: 1 }}>
                   <Text style={txt.body} numberOfLines={1}>
@@ -172,7 +173,7 @@ export default function CompanionScreen() {
                     {[cat.label, d.issuer, d.docDate ? formatDate(d.docDate) : null].filter(Boolean).join(" · ")}
                   </Text>
                 </View>
-              </Pressable>
+              </Tap>
             );
           })}
         </Card>

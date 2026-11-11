@@ -1,7 +1,7 @@
 import { goBack } from "../../lib/nav";
 import { router } from "expo-router";
 import type { SQLiteDatabase } from "expo-sqlite";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Icon } from "../../components/Icon";
 import { Screen } from "../../components/Screen";
 import { tones } from "../../components/theme";
@@ -10,6 +10,7 @@ import { DOSSIERS, prepareDossier } from "../../engine/dossiers";
 import { todayIso } from "../../lib/text";
 import { useFocusData } from "../../lib/useFocusData";
 import { loadPapers } from "../../lib/vault";
+import { Tap } from "../../components/Tap";
 
 async function load(db: SQLiteDatabase) {
   const papers = await loadPapers(db);
@@ -22,7 +23,7 @@ export default function DossiersScreen() {
     <Screen title="Dossiers prêts" onBack={goBack}>
       <SpeechBubble mood="happy">Je regarde ton coffre et je te dis ce que tu as déjà pour chaque démarche, et ce qui manque.</SpeechBubble>
       {(data ?? []).map((r) => (
-        <Pressable key={r.template.id} accessibilityRole="button" onPress={() => router.push(`/dossiers-prets/${r.template.id}`)}>
+        <Tap key={r.template.id} accessibilityRole="button" onPress={() => router.push(`/dossiers-prets/${r.template.id}`)}>
           <Card>
             <View style={styles.row}>
               <Icon name="folderCheck" size={24} />
@@ -33,9 +34,9 @@ export default function DossiersScreen() {
               <Icon name="chevron" size={18} />
             </View>
           </Card>
-        </Pressable>
+        </Tap>
       ))}
-      <Pressable accessibilityRole="button" onPress={() => router.push("/accompagnant")}>
+      <Tap accessibilityRole="button" onPress={() => router.push("/accompagnant")}>
         <Card tone="purple">
           <View style={styles.row}>
             <Icon name="family" size={24} color={tones.purple.fg} />
@@ -46,7 +47,7 @@ export default function DossiersScreen() {
             <Icon name="chevron" size={18} color={tones.purple.fg} />
           </View>
         </Card>
-      </Pressable>
+      </Tap>
     </Screen>
   );
 }

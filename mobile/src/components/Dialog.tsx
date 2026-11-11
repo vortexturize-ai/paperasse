@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
-import { Modal, StyleSheet, Text, View } from "react-native";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Animated, Modal, Platform, StyleSheet, Text, View } from "react-native";
+import { feedback, motionReduced, vibrate } from "../lib/feedback";
 import { Mascot, type Mood } from "./Brand";
 import { border, colors, pop } from "./theme";
 import { Button, txt } from "./ui";
@@ -36,6 +37,9 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const resolver = useRef<((index: number) => void) | null>(null);
 
   const show = useCallback((opts: DialogOptions) => {
+    // Fête : petit carillon ; inquiétude : vibration d'alerte, sans son.
+    if (opts.mood === "party") feedback("success");
+    else if (opts.mood === "worried") vibrate("warning");
     return new Promise<number>((resolve) => {
       resolver.current?.(-1); // une seule fenêtre à la fois
       resolver.current = resolve;
@@ -77,7 +81,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       <Modal visible={current !== null} transparent animationType="fade" onRequestClose={() => close(-1)} statusBarTranslucent>
         <View style={styles.backdrop}>
           {current ? (
-            <View style={[styles.card, pop(6)]} accessibilityViewIsModal accessibilityRole="alert">
+            <PopIn key={current.title} style={[styles.card, pop(6)]}>
               <View style={styles.mascot}>
                 <Mascot size={74} mood={current.mood ?? "happy"} tilt={-6} />
               </View>
@@ -88,11 +92,29 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                   <Button key={b.label} label={b.label} variant={b.variant ?? "secondary"} onPress={() => close(i)} />
                 ))}
               </View>
-            </View>
+            </PopIn>
           ) : null}
         </View>
       </Modal>
     </DialogContext.Provider>
+  );
+}
+
+/** La carte arrive avec un petit rebond (le fond, lui, apparaît en fondu). */
+function PopIn({ children, style }: { children: ReactNode; style: object[] }) {
+  const [v] = useState(() => new Animated.Value(motionReduced() ? 1 : 0));
+  useEffect(() => {
+    if (motionReduced()) return;
+    Animated.spring(v, { toValue: 1, useNativeDriver: Platform.OS !== "web", speed: 14, bounciness: 10 }).start();
+  }, [v]);
+  return (
+    <Animated.View
+      style={[...style, { opacity: v, transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) }] }]}
+      accessibilityViewIsModal
+      accessibilityRole="alert"
+    >
+      {children}
+    </Animated.View>
   );
 }
 

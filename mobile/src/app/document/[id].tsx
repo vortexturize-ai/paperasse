@@ -2,7 +2,7 @@ import { goBack } from "../../lib/nav";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { useCallback, useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { DocInsights, ScamBanner } from "../../components/DocInsights";
 import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
@@ -35,6 +35,7 @@ import { detectScam } from "../../engine/scam";
 import { isSensitivePaper } from "../../engine/sensitive";
 import { EasyCard, ListenButton } from "../../components/Listen";
 import { useNoScreenshots } from "../../lib/privacyScreen";
+import { Tap } from "../../components/Tap";
 
 const STEP_COLORS = [colors.orange, "#38B6FF", colors.green, colors.sun, colors.lilac];
 
@@ -196,7 +197,7 @@ export default function DocumentScreen() {
           </Text>
           <ScrollView horizontal contentContainerStyle={styles.pages} showsHorizontalScrollIndicator={false}>
             {files.map((f, i) => (
-              <Pressable
+              <Tap
                 key={f.id}
                 accessibilityRole="button"
                 accessibilityLabel={`Ouvrir la page ${i + 1}`}
@@ -211,7 +212,7 @@ export default function DocumentScreen() {
                 ) : (
                   <Image source={{ uri: uriFor(f.path) }} style={styles.pageImage} />
                 )}
-              </Pressable>
+              </Tap>
             ))}
           </ScrollView>
         </View>
@@ -366,7 +367,7 @@ export default function DocumentScreen() {
       ) : null}
 
       {doc.fullText ? (
-        <Pressable onPress={() => setShowText((s) => !s)} accessibilityRole="button" accessibilityState={{ expanded: showText }}>
+        <Tap onPress={() => setShowText((s) => !s)} accessibilityRole="button" accessibilityState={{ expanded: showText }}>
           <Card flat>
             <View style={styles.row}>
               <Icon name="text" size={20} />
@@ -379,7 +380,7 @@ export default function DocumentScreen() {
               </Text>
             ) : null}
           </Card>
-        </Pressable>
+        </Tap>
       ) : null}
 
       <View style={{ gap: 12, marginTop: 4 }}>

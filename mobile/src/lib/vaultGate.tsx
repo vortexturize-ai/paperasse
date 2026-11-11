@@ -141,6 +141,7 @@ export function VaultGate({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [pin, setPinValue] = useState("");
+  const [shake, setShake] = useState(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [tries, setTries] = useState<Tries>({ n: 0, until: 0 });
@@ -242,6 +243,7 @@ export function VaultGate({ children }: { children: ReactNode }) {
       setTries(next);
       const wait = lockoutMs(n);
       setMessage(wait > 0 ? `Code incorrect. Réessaie dans ${waitLabel(wait)}.` : "Code incorrect.");
+      setShake((n) => n + 1);
       setPinValue("");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Erreur inconnue.");
@@ -362,7 +364,7 @@ export function VaultGate({ children }: { children: ReactNode }) {
           <View style={styles.message}>
             {busy ? <ActivityIndicator color={colors.sun} /> : message ? <Text style={styles.text}>{message}</Text> : null}
           </View>
-          <PinPad dark value={pin} onChange={(p) => { setPinValue(p); setMessage(null); }} onSubmit={(p) => void submit(p)} disabled={busy} />
+          <PinPad dark value={pin} shake={shake} onChange={(p) => { setPinValue(p); setMessage(null); }} onSubmit={(p) => void submit(p)} disabled={busy} />
           <View style={styles.links}>
             {codes?.bio && bioReady ? (
               <Pressable accessibilityRole="button" onPress={() => void unlockWithBiometrics(false)} style={styles.link}>

@@ -1,11 +1,13 @@
 import { router } from "expo-router";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import { CATEGORIES, URGENCY, categoryOf } from "../lib/categories";
 import { daysUntil, formatAmount, relativeDays } from "../lib/text";
 import type { DocumentRecord } from "../lib/types";
 import { Mascot, type Mood } from "./Brand";
 import { Icon, type IconName } from "./Icon";
+import { Tap } from "./Tap";
+import type { Sound } from "../lib/feedback";
 import { border, colors, fonts, pop, radius, tones, type Tone } from "./theme";
 
 export const txt = StyleSheet.create({
@@ -41,17 +43,20 @@ export function Button(props: {
   loading?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
+  /** Son de l'appui ; false pour un bouton silencieux. */
+  sound?: Sound | false;
 }) {
-  const { label, onPress, variant = "primary", icon, size = "md", loading, disabled, style } = props;
+  const { label, onPress, variant = "primary", icon, size = "md", loading, disabled, style, sound = "tap" } = props;
   const off = disabled || loading;
   const v = VARIANTS[variant];
   const height = size === "lg" ? 60 : size === "md" ? 52 : 46;
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityState={{ disabled: off, busy: loading }}
       accessibilityLabel={label}
       onPress={onPress}
+      sound={sound}
       disabled={off}
       style={({ pressed }) => [
         styles.button,
@@ -78,22 +83,23 @@ export function Button(props: {
           </Text>
         </>
       )}
-    </Pressable>
+    </Tap>
   );
 }
 
 /** Bouton rond avec icône seule (retour, fermer, rappels). */
 export function IconButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
+      sound="select"
       hitSlop={6}
       style={({ pressed }) => [styles.iconButton, pop(3), pressed && styles.pressed]}
     >
       <Icon name={icon} size={22} strokeWidth={2.6} />
-    </Pressable>
+    </Tap>
   );
 }
 
@@ -110,10 +116,12 @@ export function Pill({
   icon?: IconName;
 }) {
   return (
-    <Pressable
+    <Tap
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       onPress={onPress}
+      sound="select"
+      depth={1}
       style={({ pressed }) => [
         styles.pill,
         selected && { backgroundColor: colors.sun },
@@ -122,7 +130,7 @@ export function Pill({
     >
       {icon ? <Icon name={icon} size={16} strokeWidth={2.4} /> : null}
       <Text style={{ fontFamily: selected ? fonts.bodyStrong : fonts.body, fontSize: 14, color: colors.ink }}>{label}</Text>
-    </Pressable>
+    </Tap>
   );
 }
 
@@ -211,7 +219,7 @@ export function DocCard({ doc, showDeadline = true }: { doc: DocumentRecord; sho
         : null;
   const subtitle = [doc.issuer, money].filter(Boolean).join(" · ") || cat.label;
   return (
-    <Pressable
+    <Tap
       accessibilityRole="button"
       onPress={() => router.push(`/document/${doc.id}`)}
       style={({ pressed }) => [styles.docCard, pop(4), pressed && styles.pressed]}
@@ -232,7 +240,7 @@ export function DocCard({ doc, showDeadline = true }: { doc: DocumentRecord; sho
           {showDeadline && doc.expiryDate ? <Chip label={`Expire ${relativeDays(doc.expiryDate)}`} tone="blue" icon="calendar" /> : null}
         </View>
       </View>
-    </Pressable>
+    </Tap>
   );
 }
 

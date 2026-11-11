@@ -39,7 +39,13 @@ export default function CodeScreen() {
   const [stage, setStage] = useState<Stage>(vault.hasPin ? "actuel" : "nouveau");
   const [pin, setPin] = useState("");
   const [first, setFirst] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorText] = useState<string | null>(null);
+  const [shake, setShake] = useState(0);
+  // Chaque refus fait trembler les points du code.
+  const setError = (e: string | null) => {
+    setErrorText(e);
+    if (e) setShake((n) => n + 1);
+  };
   const [busy, setBusy] = useState(false);
   const [misses, setMisses] = useState(0);
   const [done, setDone] = useState("");
@@ -142,7 +148,7 @@ export default function CodeScreen() {
               <Text style={[txt.small, { color: tones.red.fg, textAlign: "center" }]}>{error}</Text>
             ) : null}
           </View>
-          <PinPad value={pin} onChange={(p) => { setPin(p); setError(null); }} onSubmit={(p) => void submit(p)} disabled={busy} />
+          <PinPad value={pin} shake={shake} onChange={(p) => { setPin(p); setErrorText(null); }} onSubmit={(p) => void submit(p)} disabled={busy} />
         </View>
       </Card>
     </Screen>

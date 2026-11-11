@@ -2,7 +2,7 @@ import { goBack } from "../lib/nav";
 import { router } from "expo-router";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { DateField } from "../components/DateField";
 import { Icon } from "../components/Icon";
 import { Screen } from "../components/Screen";
@@ -12,6 +12,7 @@ import { depositClaim, findMoney } from "../engine/money";
 import { formatAmount, formatDate, todayIso } from "../lib/text";
 import { useFocusData } from "../lib/useFocusData";
 import { loadPapers } from "../lib/vault";
+import { Tap } from "../components/Tap";
 
 async function load(db: SQLiteDatabase) {
   return findMoney(await loadPapers(db), todayIso());
@@ -37,7 +38,7 @@ export default function MoneyScreen() {
       <Text style={txt.small}>Des pistes trouvées dans tes papiers. Rien n’est sûr à 100 % : vérifie chaque fois sur ton relevé de compte.</Text>
       {data && data.length === 0 ? <EmptyState title="Aucune piste pour l’instant" text="Plus tu ajoutes de papiers (remboursements, factures, fiches de paie), plus je trouve." mood="happy" /> : null}
       {(data ?? []).map((l) => (
-        <Pressable key={l.id} accessibilityRole="button" onPress={() => router.push(`/document/${l.paperIds[l.paperIds.length - 1]}`)}>
+        <Tap key={l.id} accessibilityRole="button" onPress={() => router.push(`/document/${l.paperIds[l.paperIds.length - 1]}`)}>
           <Card tone="green">
             <View style={styles.row}>
               <Icon name="euro" size={22} color={tones.green.fg} />
@@ -45,7 +46,7 @@ export default function MoneyScreen() {
             </View>
             <Text style={txt.body}>{l.detail}</Text>
           </Card>
-        </Pressable>
+        </Tap>
       ))}
 
       <SectionTitle>Mon dépôt de garantie</SectionTitle>

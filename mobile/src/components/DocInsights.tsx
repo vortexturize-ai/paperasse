@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Share, StyleSheet, Text, View } from "react-native";
 import { findTerms } from "../engine/glossary";
 import type { Lang } from "../engine/i18n";
 import { checkPayslip } from "../engine/payslip";
@@ -15,6 +15,7 @@ import { useDialog } from "./Dialog";
 import { Icon } from "./Icon";
 import { colors, fonts, tones } from "./theme";
 import { Button, Card, txt } from "./ui";
+import { Tap } from "./Tap";
 
 /** Bandeau rouge quand le texte ressemble à une arnaque, avec les raisons. */
 export function ScamBanner({ text }: { text: string | null }) {
@@ -73,7 +74,7 @@ export function DocInsights({ doc, lang }: { doc: DocumentRecord; lang: Lang }) 
 
       {summary.total > 0 ? (
         <Card flat>
-          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPersonal }} onPress={() => setShowPersonal((s) => !s)}>
+          <Tap accessibilityRole="button" accessibilityState={{ expanded: showPersonal }} onPress={() => setShowPersonal((s) => !s)}>
             <View style={styles.row}>
               <Icon name="shield" size={22} color={summary.high ? tones.red.fg : colors.ink} />
               <View style={styles.flex}>
@@ -85,7 +86,7 @@ export function DocInsights({ doc, lang }: { doc: DocumentRecord; lang: Lang }) 
               </View>
               <Text style={txt.small}>{showPersonal ? "Cacher" : "Voir"}</Text>
             </View>
-          </Pressable>
+          </Tap>
           {showPersonal
             ? personal.map((p, i) => (
                 <View key={i} style={styles.fact}>
@@ -118,7 +119,7 @@ export function DocInsights({ doc, lang }: { doc: DocumentRecord; lang: Lang }) 
           </View>
           <View style={styles.chips}>
             {terms.map((t) => (
-              <Pressable
+              <Tap
                 key={t.id}
                 accessibilityRole="button"
                 accessibilityLabel={`Expliquer : ${t.word}`}
@@ -126,7 +127,7 @@ export function DocInsights({ doc, lang }: { doc: DocumentRecord; lang: Lang }) 
                 style={({ pressed }) => [styles.term, pressed && { opacity: 0.7 }]}
               >
                 <Text style={styles.termText}>{t.word}</Text>
-              </Pressable>
+              </Tap>
             ))}
           </View>
         </Card>

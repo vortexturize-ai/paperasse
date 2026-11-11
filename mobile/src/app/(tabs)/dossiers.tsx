@@ -1,11 +1,12 @@
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../components/Screen";
 import { border, colors, pop, tones } from "../../components/theme";
 import { IconTile, txt } from "../../components/ui";
 import { CATEGORIES, CATEGORY_KEYS } from "../../lib/categories";
 import { countByCategory } from "../../lib/db";
 import { useFocusData } from "../../lib/useFocusData";
+import { Tap } from "../../components/Tap";
 
 export default function Folders() {
   const { data: counts } = useFocusData(countByCategory);
@@ -27,7 +28,7 @@ export default function Folders() {
           const cat = CATEGORIES[key];
           const n = counts?.[key] ?? 0;
           return (
-            <Pressable
+            <Tap
               key={key}
               accessibilityRole="button"
               accessibilityLabel={`${cat.label}, ${n} papiers`}
@@ -46,7 +47,7 @@ export default function Folders() {
                   {n === 0 ? "vide" : `${n} papier${n > 1 ? "s" : ""}`}
                 </Text>
               </View>
-            </Pressable>
+            </Tap>
           );
         })}
       </View>

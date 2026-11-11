@@ -1,9 +1,16 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Animated, Platform, StyleSheet, Text, View } from "react-native";
+import { motionReduced, vibrate } from "../lib/feedback";
 import { Icon } from "./Icon";
+import { Tap } from "./Tap";
 import { border, colors, fonts } from "./theme";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "erase", "0", "ok"] as const;
 
+/**
+ * Pavé du code secret. Touches qui s'enfoncent avec une vibration légère, mais SANS son : le nombre de chiffres
+ * tapés ne s'entend pas autour de soi. `shake` : changer sa valeur fait trembler les points (code refusé).
+ */
 export function PinPad({
   value,
   onChange,
@@ -12,6 +19,7 @@ export function PinPad({
   disabled = false,
   minLength = 4,
   maxLength = 8,
+  shake = 0,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -20,10 +28,21 @@ export function PinPad({
   disabled?: boolean;
   minLength?: number;
   maxLength?: number;
+  shake?: number;
 }) {
   const fg = dark ? "#FFF3D6" : colors.ink;
+  const [x] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!shake) return;
+    vibrate("warning");
+    if (motionReduced()) return;
+    const step = (to: number) => Animated.timing(x, { toValue: to, duration: 45, useNativeDriver: Platform.OS !== "web" });
+    Animated.sequence([step(-10), step(10), step(-8), step(8), step(-4), step(0)]).start();
+  }, [shake, x]);
+
   const press = (k: (typeof KEYS)[number]) => {
     if (disabled) return;
+    vibrate("key");
     if (k === "erase") onChange(value.slice(0, -1));
     else if (k === "ok") {
       if (value.length >= minLength) onSubmit(value);
@@ -32,28 +51,36 @@ export function PinPad({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.dots} accessible accessibilityLiveRegion="polite" accessibilityLabel={`${value.length} chiffre${value.length > 1 ? "s" : ""} tapé${value.length > 1 ? "s" : ""}`}>
+      <Animated.View
+        style={[styles.dots, { transform: [{ translateX: x }] }]}
+        accessible
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={`${value.length} chiffre${value.length > 1 ? "s" : ""} tapé${value.length > 1 ? "s" : ""}`}
+      >
         {Array.from({ length: Math.max(minLength, Math.min(maxLength, value.length + (value.length < maxLength ? 1 : 0))) }, (_, i) => (
           <View key={i} style={[styles.dot, { borderColor: fg, backgroundColor: i < value.length ? (dark ? colors.sun : colors.orange) : "transparent" }]} />
         ))}
-      </View>
+      </Animated.View>
       <View style={styles.grid}>
         {KEYS.map((k) => {
           const ok = k === "ok";
           const enabled = !disabled && (ok ? value.length >= minLength : k === "erase" ? value.length > 0 : value.length < maxLength);
           return (
-            <Pressable
+            <Tap
               key={k}
               onPress={() => press(k)}
               disabled={!enabled}
+              sound={false}
+              depth={1}
+              shrink={0.92}
               accessibilityRole="button"
               accessibilityLabel={k === "erase" ? "Effacer un chiffre" : ok ? "Valider le code" : k}
-              style={({ pressed }) => [
+              style={[
                 styles.key,
                 {
                   borderColor: fg,
                   backgroundColor: ok ? colors.sun : dark ? "rgba(255,255,255,0.08)" : colors.card,
-                  opacity: enabled ? (pressed ? 0.6 : 1) : 0.35,
+                  opacity: enabled ? 1 : 0.35,
                 },
               ]}
             >
@@ -64,7 +91,7 @@ export function PinPad({
               ) : (
                 <Text style={[styles.digit, { color: fg }]}>{k}</Text>
               )}
-            </Pressable>
+            </Tap>
           );
         })}
       </View>

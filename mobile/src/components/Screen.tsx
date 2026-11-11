@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { Animated, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { motionReduced } from "../lib/feedback";
 import { IconButton, txt } from "./ui";
 import { colors } from "./theme";
 
@@ -12,6 +13,16 @@ export function useContentWidth(): { wide: boolean; style: { width: "100%"; maxW
   const { width } = useWindowDimensions();
   const wide = width > CONTENT_MAX_WIDTH + 48;
   return { wide, style: wide ? { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" } : null };
+}
+
+/** Arrivée d'un écran : le contenu apparaît en montant de quelques pixels (220 ms, rien si « réduire les animations »). */
+function useEntrance() {
+  const [v] = useState(() => new Animated.Value(motionReduced() ? 1 : 0));
+  useEffect(() => {
+    if (motionReduced()) return;
+    Animated.timing(v, { toValue: 1, duration: 220, useNativeDriver: Platform.OS !== "web" }).start();
+  }, [v]);
+  return { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] };
 }
 
 /**
@@ -40,6 +51,7 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   const width = useContentWidth();
+  const entrance = useEntrance();
   const padding = { paddingBottom: bottomSpace + insets.bottom };
   const head =
     header ?? (
@@ -58,23 +70,25 @@ export function Screen({
     );
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={[styles.content, width.style, padding]}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
-          contentInsetAdjustmentBehavior="never"
-        >
-          {head}
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[styles.content, styles.fill, width.style, padding]}>
-          {head}
-          {children}
-        </View>
-      )}
+      <Animated.View style={[styles.fill, entrance]}>
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[styles.content, width.style, padding]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+            contentInsetAdjustmentBehavior="never"
+          >
+            {head}
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[styles.content, styles.fill, width.style, padding]}>
+            {head}
+            {children}
+          </View>
+        )}
+      </Animated.View>
     </SafeAreaView>
   );
 }

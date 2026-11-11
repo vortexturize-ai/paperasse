@@ -1,7 +1,7 @@
 import { goBack } from "../lib/nav";
 import { router } from "expo-router";
 import type { SQLiteDatabase } from "expo-sqlite";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Icon, type IconName } from "../components/Icon";
 import { Screen } from "../components/Screen";
 import { colors, fonts, pop, tones } from "../components/theme";
@@ -10,6 +10,7 @@ import { adminCalendar, type CalendarEvent } from "../engine/calendar";
 import { calendarParts, todayIso } from "../lib/text";
 import { useFocusData } from "../lib/useFocusData";
 import { loadPapers } from "../lib/vault";
+import { Tap } from "../components/Tap";
 
 const ICONS: Record<CalendarEvent["kind"], IconName> = {
   echeance: "clock",
@@ -47,7 +48,7 @@ export default function CalendarScreen() {
         <View key={month} style={{ gap: 10 }}>
           <Text style={txt.h2}>{month}</Text>
           {events.map((e, i) => (
-            <Pressable
+            <Tap
               key={`${e.date}-${i}`}
               disabled={!e.paperId}
               accessibilityRole={e.paperId ? "button" : undefined}
@@ -70,7 +71,7 @@ export default function CalendarScreen() {
                   </View>
                 </View>
               </Card>
-            </Pressable>
+            </Tap>
           ))}
         </View>
       ))}
