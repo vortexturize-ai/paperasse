@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../components/Dialog";
 import { Icon } from "../components/Icon";
+import { PdfPasswordCard, usePdfPassword } from "../components/PdfPassword";
 import { Screen } from "../components/Screen";
 import { border, colors, fonts, tones } from "../components/theme";
 import { Button, Card, Pill, SectionTitle, SpeechBubble, txt } from "../components/ui";
@@ -41,7 +42,8 @@ export default function CompanionScreen() {
   const [recipient, setRecipient] = useState("");
   const [purpose, setPurpose] = useState<string>(COMPANION_PURPOSES[0]);
   const [busy, setBusy] = useState(false);
-  const [made, setMade] = useState<{ file: File; pages: number } | null>(null);
+  const [made, setMade] = useState<{ file: File; pages: number; password?: string } | null>(null);
+  const pw = usePdfPassword(true);
 
   useEffect(() => {
     void Promise.all([listAll(db), listPeople(db)]).then(([all, ps]) => {
@@ -72,14 +74,14 @@ export default function CompanionScreen() {
   const make = async () => {
     setBusy(true);
     try {
-      const r = await writeCompanionPdf(db, { title: dossierTitle(who, people), purpose, recipient: recipient.trim(), papers: selected });
+      const r = await writeCompanionPdf(db, { title: dossierTitle(who, people), purpose, recipient: recipient.trim(), papers: selected, password: pw.value });
       if (r.skipped.length)
         await dialog.alert({
           title: "À savoir avant d’envoyer",
           message: r.skipped.map((s) => `• ${s.title} : ${s.reason}`).join("\n"),
           mood: "worried",
         });
-      setMade({ file: r.file, pages: r.pages });
+      setMade({ file: r.file, pages: r.pages, password: pw.value });
     } catch (e) {
       await dialog.alert({ title: "PDF impossible", message: e instanceof Error ? e.message : "Erreur inconnue.", mood: "worried" });
     } finally {
@@ -105,6 +107,12 @@ export default function CompanionScreen() {
         <SpeechBubble mood="party">
           {made.pages} page{made.pages > 1 ? "s" : ""}, avec le résumé des papiers en première page et le filigrane « {mark} » partout.
         </SpeechBubble>
+        {made.password ? (
+          <Card tone="purple" flat>
+            <Text style={[txt.strong, { color: tones.purple.fg }]}>Mot de passe du PDF : {made.password}</Text>
+            <Text style={[txt.small, { color: tones.purple.fg }]}>Donne-le à part (SMS, appel), jamais dans le même message que le fichier.</Text>
+          </Card>
+        ) : null}
         <Button label="Envoyer le dossier" icon="share" variant="sun" size="lg" onPress={() => void send()} />
         <Button label="Refaire un dossier" icon="refresh" variant="secondary" onPress={() => setMade(null)} />
         <Text style={[txt.small, { textAlign: "center" }]}>
@@ -175,7 +183,8 @@ export default function CompanionScreen() {
           Filigrane sur chaque page : « {mark} ». Donne seulement ce qui est demandé : un accompagnant n’a pas besoin de tout ton coffre.
         </Text>
       </Card>
-      <Button label="Créer le PDF avec filigrane" icon="share" variant="sun" size="lg" loading={busy} disabled={selected.length === 0} onPress={() => void make()} />
+      <PdfPasswordCard state={pw} />
+      <Button label="Créer le PDF avec filigrane" icon="share" variant="sun" size="lg" loading={busy} disabled={selected.length === 0 || Boolean(pw.problem)} onPress={() => void make()} />
     </Screen>
   );
 }

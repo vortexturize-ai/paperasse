@@ -1,7 +1,9 @@
+import { getRandomBytes } from "expo-crypto";
 import { Directory, File, Paths } from "expo-file-system";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { buildDossierPdf, buildPagesPdf, safeFileName, summaryLine, watermarkText, type DossierPage, type DossierPiece } from "../engine/dossierPdf";
 import type { DossierResult } from "../engine/dossiers";
+import { encryptPdf } from "../engine/pdfEncrypt";
 import { docTypeLabel } from "./categories";
 import { getFiles } from "./db";
 import { fileFor } from "./files";
@@ -13,6 +15,11 @@ function kindOf(mime: string): "jpeg" | "png" | "pdf" | null {
   if (mime === "image/png") return "png";
   if (mime === "application/pdf") return "pdf";
   return null;
+}
+
+/** Le PDF tel quel, ou protégé par un mot de passe d'ouverture (AES-256). */
+async function protect(bytes: Uint8Array, password: string | undefined): Promise<Uint8Array> {
+  return password ? encryptPdf(bytes, password, getRandomBytes) : bytes;
 }
 
 /** Pages d'un papier telles qu'enregistrées (photos, PDF), dans l'ordre, prêtes pour le PDF. */
@@ -32,6 +39,7 @@ export async function writeDossierPdf(
   db: SQLiteDatabase,
   result: DossierResult,
   recipient: string,
+  password?: string,
 ): Promise<{ file: File; pages: number; skipped: { title: string; reason: string }[] }> {
   const pieces: DossierPiece[] = [];
   for (const item of result.items) {
@@ -54,7 +62,7 @@ export async function writeDossierPdf(
   dir.create({ intermediates: true, idempotent: true });
   const out = new File(dir, `Dossier-${result.template.id}-${date}.pdf`);
   if (out.exists) out.delete();
-  await out.write(r.bytes);
+  await out.write(await protect(r.bytes, password));
   return { file: out, pages: r.pages, skipped: r.skipped };
 }
 
@@ -64,7 +72,7 @@ export async function writeDossierPdf(
  */
 export async function writeCompanionPdf(
   db: SQLiteDatabase,
-  input: { title: string; purpose: string; recipient: string; papers: DocumentRecord[] },
+  input: { title: string; purpose: string; recipient: string; papers: DocumentRecord[]; password?: string },
 ): Promise<{ file: File; pages: number; skipped: { title: string; reason: string }[] }> {
   const pieces: DossierPiece[] = [];
   for (const paper of input.papers) {
@@ -97,7 +105,7 @@ export async function writeCompanionPdf(
   dir.create({ intermediates: true, idempotent: true });
   const out = new File(dir, `${safeFileName(input.title, "Dossier")}-${date}.pdf`);
   if (out.exists) out.delete();
-  await out.write(r.bytes);
+  await out.write(await protect(r.bytes, input.password));
   return { file: out, pages: r.pages, skipped: r.skipped };
 }
 
@@ -108,6 +116,7 @@ export async function writeCompanionPdf(
 export async function writePaperPdf(
   db: SQLiteDatabase,
   paper: { id: string; title: string },
+  password?: string,
 ): Promise<{ file: File; pages: number; skipped: { title: string; reason: string }[] }> {
   const r = await buildPagesPdf({ title: paper.title, pages: await pagesOf(db, paper.id) });
   const dir = new Directory(Paths.cache, "partage");
@@ -119,6 +128,6 @@ export async function writePaperPdf(
   dir.create({ intermediates: true, idempotent: true });
   const out = new File(dir, `${safeFileName(paper.title)}.pdf`);
   if (out.exists) out.delete();
-  await out.write(r.bytes);
+  await out.write(await protect(r.bytes, password));
   return { file: out, pages: r.pages, skipped: r.skipped };
 }

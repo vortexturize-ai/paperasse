@@ -72,7 +72,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 - **Moments de vie** : déménagement, perte d'emploi, nouveau travail, naissance, mariage ou Pacs, retraite, décès d'un proche. Les démarches dans l'ordre, avec les papiers que tu as déjà.
 - **Dossiers prêts** (location, prêt, titre de séjour, embauche) : ce qui est prêt, ce qui manque, ce qu'**on n'a pas le droit de te demander**, puis un seul PDF avec un **filigrane** sur chaque page (« Uniquement pour la location d'un logement — Agence Martin — 10/11/2026 »).
 - **Argent à récupérer**, durées de conservation (« tu peux jeter »), recherche dans tous tes papiers.
-- **Partager un papier** : sa page telle quelle, ou toutes ses pages réunies en un seul PDF.
+- **Partager un papier** : toutes ses pages réunies en un seul PDF, **protégé par un mot de passe** (AES-256, proposé tout fait, à donner à part). Même protection pour les dossiers prêts et le dossier pour un accompagnant.
 - **Famille et aidants** : un profil par proche (« Maman », un enfant…) pour gérer aussi leurs papiers.
 - **Dossier pour un accompagnant** (assistante sociale, CCAS, France Services) : les papiers choisis, les tiens ou ceux d'un proche, en un seul PDF avec le résumé de chacun en première page et un filigrane au nom de la personne.
 
@@ -121,7 +121,7 @@ Paperasse peut se tromper : vérifie toujours les dates et les montants sur le p
 - [ ] Publication sur le Play Store
 - [ ] Version iPhone
 - [ ] Chiffrement des images des pages
-- [ ] PDF protégé par mot de passe, export pour un travailleur social
+- [x] PDF protégé par mot de passe, dossier pour un travailleur social
 - [ ] Essais sur 100 vrais courriers anonymisés
 - [ ] Plus de langues (portugais, turc, roumain, ukrainien…) et d'autres pays (Belgique, Suisse, Québec, Maghreb…)
 
@@ -159,7 +159,7 @@ L'app est écrite avec Expo et React Native, donc prévue pour iPhone, mais elle
 
 ## Pour les développeurs
 
-**Pile** : Expo SDK 58, React Native 0.88, React 19, TypeScript strict, Expo Router, expo-sqlite avec SQLCipher, expo-secure-store, ML Kit (lecture du texte, modèle intégré à l'app), pdf-lib, fflate, @noble/hashes.
+**Pile** : Expo SDK 58, React Native 0.88, React 19, TypeScript strict, Expo Router, expo-sqlite avec SQLCipher, expo-secure-store, ML Kit (lecture du texte, modèle intégré à l'app), pdf-lib, fflate, @noble/hashes, @noble/ciphers.
 
 ### Démarrer
 
@@ -205,6 +205,7 @@ npm run fiabilite         # rapport de fiabilité de l'analyse
 - **Codes** : PBKDF2-SHA256 avec sel aléatoire ; le code secret et le code panique sont vérifiés par une seule dérivation, pour qu'ils prennent le même temps. Attente de 30 s à 1 h après 5 erreurs.
 - **Code panique** : ouvre une seconde base chiffrée distincte, avec sa propre clé.
 - **Sauvegarde `.paperasse`** : en-tête JSON puis blocs de 1 Mo scellés en AES-256-GCM. Nonce = préfixe aléatoire + compteur, données associées = en-tête + compteur + indicateur de dernier bloc (ni réordonnancement, ni troncature possible). Clé de secours de 140 bits (base32 de Crockford, 2 caractères de contrôle).
+- **PDF partagé avec mot de passe** : chiffrement standard des PDF, révision 6 (ISO 32000-2, AES-256) ; chaque chaîne et chaque flux est chiffré, le mot de passe propriétaire est tiré au hasard puis oublié. Vérifié par une seconde mise en œuvre dans les tests et par un lecteur PDF indépendant (Poppler).
 - **Réseau** : l'app n'appelle aucun service. Pas de télémétrie, pas de suivi des plantages.
 
 Une faille ? Merci de ne pas ouvrir de ticket public : voir [SECURITY.md](SECURITY.md).

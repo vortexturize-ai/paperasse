@@ -5,12 +5,14 @@ import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
+import { PdfPasswordCard, usePdfPassword } from "../../components/PdfPassword";
 import { Screen } from "../../components/Screen";
 import { border, colors, fonts, tones } from "../../components/theme";
 import { Button, Card, Chip, EmptyState, SectionTitle, txt } from "../../components/ui";
 import { shareFile } from "../../lib/backup";
 import { writeDossierPdf } from "../../lib/dossierShare";
 import { DOSSIERS, prepareDossier, whyNot } from "../../engine/dossiers";
+import { useNoScreenshots } from "../../lib/privacyScreen";
 import { formatDate, todayIso } from "../../lib/text";
 import { useFocusData } from "../../lib/useFocusData";
 import { loadPapers } from "../../lib/vault";
@@ -30,12 +32,14 @@ export default function DossierScreen() {
   const dialog = useDialog();
   const [recipient, setRecipient] = useState("");
   const [busy, setBusy] = useState(false);
+  const pw = usePdfPassword(true);
+  useNoScreenshots(pw.on, "dossier-pret"); // le mot de passe est à l'écran
 
   const sendPdf = async () => {
     if (!data) return;
     setBusy(true);
     try {
-      const r = await writeDossierPdf(db, data, recipient);
+      const r = await writeDossierPdf(db, data, recipient, pw.value);
       if (r.skipped.length)
         await dialog.alert({
           title: "À savoir avant d’envoyer",
@@ -117,7 +121,8 @@ export default function DossierScreen() {
               style={styles.input}
               accessibilityLabel="Destinataire du dossier"
             />
-            <Button label="Créer le PDF avec filigrane" icon="share" variant="sun" loading={busy} onPress={() => void sendPdf()} />
+            <PdfPasswordCard state={pw} />
+            <Button label="Créer le PDF avec filigrane" icon="share" variant="sun" loading={busy} disabled={Boolean(pw.problem)} onPress={() => void sendPdf()} />
             {data.missing ? <Text style={txt.small}>Les pièces manquantes seront listées en première page.</Text> : null}
           </Card>
         </>

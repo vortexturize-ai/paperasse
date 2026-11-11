@@ -1,6 +1,5 @@
 import { goBack } from "../../lib/nav";
 import { router, useLocalSearchParams } from "expo-router";
-import * as Sharing from "expo-sharing";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { useCallback, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -24,9 +23,7 @@ import {
 import { CATEGORIES, CATEGORY_KEYS, URGENCY, categoryOf, docTypeLabel, type Category } from "../../lib/categories";
 import { getDocument, getFiles, getSetting, listPeople, setDocumentPerson, updateDocument } from "../../lib/db";
 import { WhoPills } from "../../components/WhoPills";
-import { shareFile } from "../../lib/backup";
 import { rememberCategory, removeDocument, runAnalysis, setDone } from "../../lib/documents";
-import { writePaperPdf } from "../../lib/dossierShare";
 import { openPreview, uriFor } from "../../lib/files";
 import { withLockSuspended } from "../../lib/lock";
 import { canReadImages } from "../../lib/ocr";
@@ -57,7 +54,6 @@ export default function DocumentScreen() {
   );
   const { data, reload } = useFocusData(load);
   const [analyzing, setAnalyzing] = useState(false);
-  const [sharing, setSharing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState<Category>("autre");
@@ -119,31 +115,6 @@ export default function DocumentScreen() {
     await setDone(db, doc, done);
     await reload();
     if (done) await dialog.alert({ title: "Bravo !", message: "Un papier de moins à gérer. J’ai arrêté ses rappels.", mood: "party", okLabel: "Super" });
-  };
-
-  const share = async () => {
-    if (files.length === 0) return;
-    if (!(await Sharing.isAvailableAsync())) {
-      await dialog.alert({ title: "Partage indisponible sur ce téléphone.", mood: "worried" });
-      return;
-    }
-    if (files.length === 1) {
-      const first = files[0];
-      await withLockSuspended(() => Sharing.shareAsync(uriFor(first.path), { mimeType: first.mime, dialogTitle: doc.title }));
-      return;
-    }
-    // Plusieurs pages : un seul PDF, dans l'ordre des pages.
-    setSharing(true);
-    try {
-      const r = await writePaperPdf(db, doc);
-      if (r.skipped.length)
-        await dialog.alert({ title: "Une page n’a pas pu être incluse", message: r.skipped.map((s) => `• ${s.reason}`).join("\n"), mood: "worried" });
-      await shareFile(r.file, "application/pdf", doc.title);
-    } catch (e) {
-      await dialog.alert({ title: "Partage impossible", message: e instanceof Error ? e.message : "Erreur inconnue.", mood: "worried" });
-    } finally {
-      setSharing(false);
-    }
   };
 
   const startEdit = () => {
@@ -416,7 +387,7 @@ export default function DocumentScreen() {
           <Button label="Écrire une réponse" icon="pencil" variant="secondary" onPress={() => router.push(`/reponse/${doc.id}`)} />
         ) : null}
         <View style={styles.row}>
-          <Button label={files.length > 1 ? "Partager en PDF" : "Partager"} icon="share" variant="info" size="sm" loading={sharing} onPress={() => void share()} style={styles.flex} />
+          <Button label="Partager" icon="share" variant="info" size="sm" disabled={files.length === 0} onPress={() => router.push(`/partager/${doc.id}`)} style={styles.flex} />
           <Button label="Supprimer" icon="trash" variant="danger" size="sm" onPress={() => void confirmDelete()} style={styles.flex} />
         </View>
         {!editing ? <Button label="Renommer ou changer de dossier" variant="secondary" size="sm" onPress={startEdit} /> : null}
