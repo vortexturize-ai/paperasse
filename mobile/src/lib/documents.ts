@@ -43,15 +43,15 @@ export async function createDocument(
   opts: CreateOptions,
 ): Promise<{ id: string; analysisError: string | null }> {
   const id = randomUUID();
-  let stored: { path: string; mime: string }[] = [];
+  const title = opts.title?.trim() || `Papier du ${formatDate(todayIso())}`;
   try {
-    stored = await storePages(id, pages);
+    const stored = await storePages(id, pages);
+    await insertDocument(db, id, { title, category: opts.category ?? "autre" }, stored);
   } catch (e) {
+    // Rien d'à moitié fait : pas de pages sans fiche dans le dossier de l'app.
     deleteDocumentFiles(id);
     throw e;
   }
-  const title = opts.title?.trim() || `Papier du ${formatDate(todayIso())}`;
-  await insertDocument(db, id, { title, category: opts.category ?? "autre" }, stored);
 
   if (!opts.read) return { id, analysisError: null };
   try {
@@ -115,7 +115,7 @@ export async function syncReminders(db: SQLiteDatabase, discreet: boolean): Prom
   const wanted = discreet ? "discret" : "detail";
   const modeChanged = (await getSetting(db, "reminders_mode")) !== wanted;
   const scheduled = await scheduledReminderIds();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   for (const doc of await listAll(db)) {
     const upcoming = (doc.deadline !== null && !doc.isDone && doc.deadline >= today) || (doc.expiryDate !== null && doc.expiryDate >= today);
     const missing = doc.notificationIds.some((id) => !scheduled.has(id));

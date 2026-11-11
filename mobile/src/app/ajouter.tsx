@@ -14,7 +14,7 @@ import { CATEGORIES, CATEGORY_KEYS, type Category } from "../lib/categories";
 import { getSetting } from "../lib/db";
 import { createDocument } from "../lib/documents";
 import { PROBLEM_TEXT } from "../engine/scan";
-import { prepareImage, preparePdf } from "../lib/files";
+import { discardPages, discardTemp, prepareImage, preparePdf } from "../lib/files";
 import { inspectPhoto, prepareScan, prepareSystemScanPage, systemScan } from "../lib/scanner";
 import { withLockSuspended } from "../lib/lock";
 import { canReadImages } from "../lib/ocr";
@@ -86,7 +86,11 @@ export default function AddDocument() {
       setBusy("photo");
       try {
         const shots: PendingPage[] = [];
-        for (const uri of scan.pages.slice(0, room)) shots.push(await prepareSystemScanPage(uri));
+        for (const uri of scan.pages.slice(0, room)) {
+          shots.push(await prepareSystemScanPage(uri));
+          discardTemp(uri);
+        }
+        for (const uri of scan.pages.slice(room)) discardTemp(uri);
         addPages(shots);
       } finally {
         setBusy(null);
@@ -123,9 +127,17 @@ export default function AddDocument() {
             cancelLabel: "Garder",
           });
           setBusy("photo");
-          if (retake) break;
+          if (retake) {
+            discardTemp(a.uri);
+            break;
+          }
         }
-        shots.push(check ? await prepareScan(a.uri, check.box) : await prepareImage(a.uri, a.width, a.height));
+        try {
+          shots.push(check ? await prepareScan(a.uri, check.box) : await prepareImage(a.uri, a.width, a.height));
+        } finally {
+          // La photo pleine taille de l'appareil ne reste pas dans le cache : seule la copie réduite est gardée.
+          discardTemp(a.uri);
+        }
       }
       addPages(shots);
     } finally {
@@ -144,8 +156,12 @@ export default function AddDocument() {
       // Photos de la galerie : recadrées sur la feuille si on la voit nettement, sans autre question.
       const shots: PendingPage[] = [];
       for (const a of res.assets) {
-        const check = await inspectPhoto(a.uri);
-        shots.push(check?.box ? await prepareScan(a.uri, check.box) : await prepareImage(a.uri, a.width, a.height));
+        try {
+          const check = await inspectPhoto(a.uri);
+          shots.push(check?.box ? await prepareScan(a.uri, check.box) : await prepareImage(a.uri, a.width, a.height));
+        } finally {
+          discardTemp(a.uri); // copie faite par le sélecteur, jamais la photo de la galerie elle-même
+        }
       }
       addPages(shots);
     } finally {
@@ -184,6 +200,7 @@ export default function AddDocument() {
       })
       .then((leave) => {
         if (leave) {
+          discardPages(pages); // copies temporaires : rien ne reste dans le cache
           pendingLeave.current = repeat;
           setLeaving(true);
         }
@@ -309,7 +326,10 @@ export default function AddDocument() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Retirer la page ${i + 1}`}
-                  onPress={() => setPages((all) => all.filter((_, j) => j !== i))}
+                  onPress={() => {
+                    discardTemp(p.uri);
+                    setPages((all) => all.filter((_, j) => j !== i));
+                  }}
                   style={styles.remove}
                   hitSlop={10}
                 >

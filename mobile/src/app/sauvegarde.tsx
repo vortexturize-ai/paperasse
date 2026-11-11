@@ -21,10 +21,12 @@ import {
   writeSheet,
   type RestoreReport,
 } from "../lib/backup";
-import { listAll, listPeople, setSetting } from "../lib/db";
+import { autoBackupSupported, backupState, chooseBackupFolder, folderLabel, recordBackup, runAutoBackup, stopAutoBackup } from "../lib/autoBackup";
+import { listAll, listPeople } from "../lib/db";
 import { WhoPills } from "../components/WhoPills";
 import { belongsTo, type Person } from "../engine/people";
 import { goBack } from "../lib/nav";
+import { useFocusData } from "../lib/useFocusData";
 import { useNoScreenshots } from "../lib/privacyScreen";
 import { withLockSuspended } from "../lib/suspend";
 import { formatDate } from "../lib/text";
@@ -94,7 +96,7 @@ function Backup() {
     if (!result) return;
     try {
       await shareFile(result.file, "application/octet-stream", "Ranger ma sauvegarde Paperasse");
-      await setSetting(db, "backup_last", new Date().toISOString());
+      await recordBackup(db);
     } catch (e) {
       await dialog.alert({ title: "Partage impossible", message: errorText(e), mood: "worried" });
     }
@@ -153,6 +155,95 @@ function Backup() {
       <Pressable accessibilityRole="button" onPress={() => void renew()} style={styles.link}>
         <Text style={styles.linkText}>Changer de clé de secours</Text>
       </Pressable>
+
+      <AutoSection />
+    </>
+  );
+}
+
+/** Sauvegarde automatique : chaque semaine (ou dès qu'il y a du nouveau) dans un dossier choisi une fois. */
+function AutoSection() {
+  const db = useSQLiteContext();
+  const vault = useVault();
+  const dialog = useDialog();
+  const { data: state, reload } = useFocusData(backupState);
+  const [busy, setBusy] = useState(false);
+
+  const run = async (force: boolean) => {
+    setBusy(true);
+    try {
+      const r = await runAutoBackup(db, vault.kind, force);
+      if (r === "erreur") {
+        await dialog.alert({ title: "Sauvegarde impossible", message: "Je n’arrive pas à écrire dans ce dossier. Choisis-en un autre.", mood: "worried" });
+      }
+    } finally {
+      setBusy(false);
+      await reload();
+    }
+  };
+
+  const choose = async () => {
+    const uri = await chooseBackupFolder(db);
+    if (!uri) return;
+    await run(true);
+    await dialog.alert({
+      title: "Sauvegarde automatique en place",
+      message: "Chaque semaine, et dès que tu ajoutes des papiers, une sauvegarde chiffrée part dans ce dossier. Garde bien ta clé de secours : sans elle, la sauvegarde ne s’ouvre pas.",
+      mood: "happy",
+    });
+  };
+
+  const stop = async () => {
+    const ok = await dialog.confirm({
+      title: "Arrêter la sauvegarde automatique ?",
+      message: "Les sauvegardes déjà faites restent dans le dossier. Pense à en faire à la main de temps en temps.",
+      confirmLabel: "Arrêter",
+    });
+    if (ok) {
+      await stopAutoBackup(db);
+      await reload();
+    }
+  };
+
+  if (!autoBackupSupported) {
+    return (
+      <>
+        <SectionTitle>Sauvegarde automatique</SectionTitle>
+        <Text style={txt.small}>
+          Sur iPhone et iPad, l’accès à un dossier ne peut pas être gardé d’une ouverture à l’autre. Range ta sauvegarde dans Fichiers
+          (iCloud Drive) avec « Ranger le fichier » : l’accueil te rappelle quand elle devient trop vieille.
+        </Text>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SectionTitle>Sauvegarde automatique</SectionTitle>
+      {state?.folder ? (
+        <Card tone={state.autoFailed ? "red" : "green"} flat>
+          <Text style={[txt.strong, { color: state.autoFailed ? tones.red.fg : tones.green.fg }]}>
+            {state.autoFailed ? "La dernière sauvegarde automatique a échoué" : `Dans « ${folderLabel(state.folder)} »`}
+          </Text>
+          <Text style={txt.small}>
+            {state.last ? `Dernière sauvegarde : ${formatDate(state.last.slice(0, 10))}. ` : ""}
+            Chaque semaine, et dès que tu ajoutes des papiers. Les 3 dernières sont gardées.
+          </Text>
+          <Button label={busy ? "Je sauvegarde…" : "Sauvegarder maintenant"} icon="shield" variant="sun" loading={busy} onPress={() => void run(true)} style={{ marginTop: 10 }} />
+          <Button label="Changer de dossier" icon="folder" variant="secondary" onPress={() => void choose()} style={{ marginTop: 8 }} />
+          <Pressable accessibilityRole="button" onPress={() => void stop()} style={styles.link}>
+            <Text style={styles.linkText}>Arrêter la sauvegarde automatique</Text>
+          </Pressable>
+        </Card>
+      ) : (
+        <>
+          <Text style={txt.small}>
+            Choisis une fois un dossier (Google Drive, clé USB, carte SD) : Paperasse y range une sauvegarde chiffrée chaque semaine, sans que tu y
+            penses. Si le téléphone casse, tu récupères tout avec ta clé de secours.
+          </Text>
+          <Button label="Choisir un dossier" icon="folder" variant="sun" onPress={() => void choose()} />
+        </>
+      )}
     </>
   );
 }

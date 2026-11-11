@@ -1,6 +1,5 @@
 import { getRandomBytes } from "expo-crypto";
 import * as LocalAuthentication from "expo-local-authentication";
-import * as SecureStore from "expo-secure-store";
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from "react-native";
@@ -19,8 +18,11 @@ import {
   verifyPinAsync,
   type PinRecord,
 } from "../engine/secret";
+import { autoBackupSupported, runAutoBackup } from "./autoBackup";
 import { migrate } from "./db";
 import { syncReminders } from "./documents";
+import { sweepTempDirs } from "./files";
+import * as SecureStore from "./secureStore";
 import { cancelAllReminders, setReminderMode } from "./notifications";
 import { lockSuspended } from "./suspend";
 import { useNoScreenshots } from "./privacyScreen";
@@ -337,6 +339,7 @@ export function VaultGate({ children }: { children: ReactNode }) {
           onInit={onInit}
         >
           <ReminderSync decoy={cfg.kind === "leurre"} discreet={Boolean(codes?.secret)} />
+          <Housekeeping kind={cfg.kind} />
           {children}
         </SQLiteProvider>
       ) : null}
@@ -385,6 +388,21 @@ export function VaultGate({ children }: { children: ReactNode }) {
       ) : null}
     </VaultContext.Provider>
   );
+}
+
+/**
+ * À l'ouverture du coffre : le cache est vidé de ce qu'une session interrompue a pu y laisser (pages déchiffrées
+ * d'une restauration, copies de photos), puis la sauvegarde automatique part quelques secondes plus tard si elle est due.
+ */
+function Housekeeping({ kind }: { kind: VaultKind }) {
+  const db = useSQLiteContext();
+  useEffect(() => {
+    sweepTempDirs();
+    if (!autoBackupSupported) return;
+    const t = setTimeout(() => void runAutoBackup(db, kind).catch(() => undefined), 4000);
+    return () => clearTimeout(t);
+  }, [db, kind]);
+  return null;
 }
 
 /** Rappels selon le coffre ouvert : aucun dans le leurre (ceux du vrai coffre trahiraient son existence),

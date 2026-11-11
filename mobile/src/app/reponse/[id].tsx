@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Share, StyleSheet, Text, TextInput, View } from "react-native";
@@ -10,6 +10,7 @@ import { Button, Card, Pill, SpeechBubble, txt } from "../../components/ui";
 import { REPLY_GOALS, writeReply, type ReplyGoal } from "../../engine/reply";
 import { getDocument, getSetting } from "../../lib/db";
 import { withLockSuspended } from "../../lib/lock";
+import { goBack } from "../../lib/nav";
 import { todayIso } from "../../lib/text";
 import type { DocumentRecord } from "../../lib/types";
 
@@ -67,7 +68,7 @@ export default function Reply() {
   };
 
   return (
-    <Screen title="Écrire une réponse" onClose={() => router.back()}>
+    <Screen title="Écrire une réponse" onClose={goBack}>
       <SpeechBubble mood={draft ? "party" : "happy"}>
         {draft ? "Voilà ! Relis-le et complète ce qui est entre [crochets]." : "Qu’est-ce que tu veux demander ?"}
       </SpeechBubble>

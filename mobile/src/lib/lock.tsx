@@ -31,7 +31,11 @@ export function useLock(): LockContextValue {
 export { withLockSuspended } from "./suspend";
 
 async function biometricsReady(): Promise<boolean> {
-  return (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
+  try {
+    return (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
+  } catch {
+    return false;
+  }
 }
 
 /**

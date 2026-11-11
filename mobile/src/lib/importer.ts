@@ -1,11 +1,12 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 import { Directory, File, Paths } from "expo-file-system";
-import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { randomUUID } from "expo-crypto";
 import { kindOfName, unpackArchive } from "../engine/archive";
 import { createDocument } from "./documents";
-import { MAX_PDF_BYTES } from "./files";
+import { MAX_PDF_BYTES, discardTemp, prepareImageAuto } from "./files";
 import type { PendingPage } from "./types";
+
+export { prepareImageAuto };
 
 export interface IncomingItem {
   uri: string;
@@ -21,24 +22,10 @@ export interface ImportReport {
   skipped: { name: string; reason: string }[];
 }
 
-const MAX_EDGE = 2000;
-
 function tmpDir(): Directory {
   const d = new Directory(Paths.cache, "import");
   d.create({ intermediates: true, idempotent: true });
   return d;
-}
-
-/** Photo de n'importe quelle taille → JPEG réduit (sans agrandir une petite image). */
-export async function prepareImageAuto(uri: string): Promise<PendingPage> {
-  const first = await ImageManipulator.manipulate(uri).renderAsync();
-  let ctx = ImageManipulator.manipulate(uri);
-  if (Math.max(first.width, first.height) > MAX_EDGE) {
-    ctx = first.width >= first.height ? ctx.resize({ width: MAX_EDGE }) : ctx.resize({ height: MAX_EDGE });
-  }
-  const image = await ctx.renderAsync();
-  const saved = await image.saveAsync({ compress: 0.75, format: SaveFormat.JPEG });
-  return { uri: saved.uri, mime: "image/jpeg", name: "photo.jpg" };
 }
 
 /** Type d'un fichier reçu : d'abord son type annoncé, sinon son extension. */
@@ -111,8 +98,11 @@ export async function importItems(db: SQLiteDatabase, input: IncomingItem[], opt
         pages.push(await prepareImageAuto(img.uri));
       } catch {
         report.failed.push({ name: img.name, reason: "image illisible" });
+      } finally {
+        discardTemp(img.uri);
       }
     }
+    for (const img of images.slice(10)) discardTemp(img.uri);
     if (pages.length) await save(images[0].name, pages);
   } else {
     for (const img of images) {
@@ -120,6 +110,8 @@ export async function importItems(db: SQLiteDatabase, input: IncomingItem[], opt
         await save(img.name, [await prepareImageAuto(img.uri)]);
       } catch {
         report.failed.push({ name: img.name, reason: "image illisible" });
+      } finally {
+        discardTemp(img.uri);
       }
     }
   }
@@ -129,12 +121,14 @@ export async function importItems(db: SQLiteDatabase, input: IncomingItem[], opt
       const size = it.uri ? new File(it.uri).size : 0;
       if (size > MAX_PDF_BYTES) {
         report.failed.push({ name: it.name, reason: "PDF trop lourd (15 Mo maximum)" });
+        discardTemp(it.uri);
         continue;
       }
       await save(it.name, [{ uri: it.uri, mime: "application/pdf", name: it.name }]);
     } else if (k === "text") {
       const text = it.text ?? (it.uri ? await new File(it.uri).text() : "");
       if (text.trim()) await save(it.name || "Texte partagé", [], text);
+      discardTemp(it.uri);
     }
   }
   return report;

@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -24,7 +24,7 @@ const TITLES: Record<Etape, string> = {
 
 const INTRO: Record<Etape, string> = {
   creer:
-    "Choisis un code de 4 à 8 chiffres. Je le demanderai à chaque ouverture de Paperasse. Si tu l’oublies, il faudra le verrouillage du téléphone pour rentrer.",
+    "Choisis un code de 4 à 8 chiffres. Je le demanderai à chaque ouverture de Paperasse. Si tu l’oublies, il faudra le verrouillage du téléphone pour rentrer. Le code protège contre le vol, pas contre la casse : si le téléphone casse, seule une sauvegarde rend tes papiers.",
   changer: "Tape d’abord ton code actuel, puis le nouveau.",
   retirer: "Tape ton code pour le retirer. Paperasse restera protégé par le verrouillage du téléphone.",
   panique:
@@ -109,6 +109,13 @@ export default function CodeScreen() {
       <Screen title={TITLES[etape]} onClose={goBack}>
         <SpeechBubble mood="party">{done}</SpeechBubble>
         <Button label="Terminé" icon="check" variant="sun" size="lg" onPress={goBack} />
+        {etape === "creer" ? (
+          <Card flat>
+            <Text style={txt.strong}>Et si le téléphone casse ?</Text>
+            <Text style={txt.small}>Tes papiers ne sont que sur ce téléphone. Une sauvegarde automatique chiffrée les met à l’abri en une minute.</Text>
+            <Button label="Mettre la sauvegarde en place" icon="shield" variant="secondary" onPress={() => router.replace("/sauvegarde")} style={{ marginTop: 10 }} />
+          </Card>
+        ) : null}
       </Screen>
     );
   }

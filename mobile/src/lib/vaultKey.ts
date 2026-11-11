@@ -1,10 +1,10 @@
 import { getRandomBytes } from "expo-crypto";
 import { File } from "expo-file-system";
-import * as SecureStore from "expo-secure-store";
 import { defaultDatabaseDirectory, deleteDatabaseAsync, openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import { Platform } from "react-native";
 import { getFiles, listAll, migrate, setSetting } from "./db";
 import { deletePages } from "./files";
+import * as SecureStore from "./secureStore";
 
 export type VaultKind = "reel" | "leurre";
 

@@ -1,6 +1,5 @@
 import { AESEncryptionKey, AESSealedData, aesDecryptAsync, aesEncryptAsync, getRandomBytes } from "expo-crypto";
 import { Directory, File, FileMode, Paths } from "expo-file-system";
-import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
 import type { SQLiteDatabase } from "expo-sqlite";
 import {
@@ -28,6 +27,7 @@ import {
 import { recoverySheet, type SheetInput } from "../engine/sheet";
 import { refreshReminders } from "./documents";
 import { fileFor } from "./files";
+import * as SecureStore from "./secureStore";
 import { withLockSuspended } from "./suspend";
 import type { VaultKind } from "./vaultKey";
 

@@ -138,7 +138,9 @@ export function Chip({ label, tone, icon, onTint }: { label: string; tone: Tone;
   return (
     <View style={[styles.chip, { backgroundColor: onTint ? colors.card : t.bg }]}>
       {icon ? <Icon name={icon} size={13} color={t.fg} strokeWidth={2.6} /> : null}
-      <Text style={[styles.chipText, { color: t.fg }]}>{label}</Text>
+      <Text style={[styles.chipText, { color: t.fg }]} maxFontSizeMultiplier={1.5}>
+        {label}
+      </Text>
     </View>
   );
 }

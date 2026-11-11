@@ -96,6 +96,8 @@ export default function DocumentScreen() {
   const late = doc.deadline !== null && daysUntil(doc.deadline) < 0 && !doc.isDone;
   // On peut (re)lire si les photos sont lisibles ici, ou si le texte est déjà connu (texte collé, lecture précédente).
   const canRead = Boolean(doc.fullText?.trim()) || (canReadImages && files.some((f) => f.mime.startsWith("image/")));
+  // Explication en arabe : texte aligné à droite et lu de droite à gauche.
+  const textDir = langFromName(doc.analysisLang) === "ar" ? styles.rtl : null;
 
   const analyzeNow = async () => {
     setAnalyzing(true);
@@ -149,7 +151,7 @@ export default function DocumentScreen() {
     });
     if (!ok) return;
     await removeDocument(db, doc);
-    router.back();
+    goBack();
   };
 
   return (
@@ -250,7 +252,11 @@ export default function DocumentScreen() {
 
       {analyzed ? <ScamBanner text={doc.fullText} /> : null}
 
-      {doc.summary ? <SpeechBubble title="En bref">{doc.summary}</SpeechBubble> : null}
+      {doc.summary ? (
+        <SpeechBubble title="En bref">
+          <Text style={[txt.strong, textDir]}>{doc.summary}</Text>
+        </SpeechBubble>
+      ) : null}
       {easy && !data.easy ? <ListenButton text={easy.speech} lang={easyLang} /> : null}
 
       {doc.deadline ? (
@@ -290,7 +296,7 @@ export default function DocumentScreen() {
                 <View style={[styles.stepNumber, { backgroundColor: STEP_COLORS[i % STEP_COLORS.length] }]}>
                   <Text style={styles.stepNumberText}>{i + 1}</Text>
                 </View>
-                <Text style={[txt.body, styles.flex, { paddingTop: 5 }]}>{a}</Text>
+                <Text style={[txt.body, styles.flex, { paddingTop: 5 }, textDir]}>{a}</Text>
               </View>
             ))}
           </Card>
@@ -454,6 +460,7 @@ const styles = StyleSheet.create({
   },
   calendarDay: { textAlign: "center", fontFamily: fonts.titleBold, fontSize: 32, lineHeight: 44, color: colors.ink },
   quote: { fontStyle: "italic", color: "#6B3A00" },
+  rtl: { writingDirection: "rtl", textAlign: "right" },
   step: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   stepNumber: {
     width: 34,

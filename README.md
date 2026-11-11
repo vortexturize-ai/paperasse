@@ -86,10 +86,14 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 | **Code secret** | Demandé à l'ouverture et après une minute sans utiliser l'app. Attente croissante après plusieurs erreurs. Les rappels ne montrent plus le nom des papiers sur l'écran verrouillé. |
 | **Code panique** | Un second code qui ouvre un coffre vide, d'apparence normale. Les vrais papiers restent chiffrés et cachés, et leurs rappels se taisent. |
 | **Captures d'écran** | Toujours bloquées sur les pièces sensibles (identité, banque, santé), et partout si tu le choisis. |
-| **Sauvegarde** | Un seul fichier chiffré de bout en bout, à ranger où tu veux. Sans ta clé de secours, personne ne peut l'ouvrir. |
+| **Sauvegarde** | Un seul fichier chiffré de bout en bout, à ranger où tu veux. Sans ta clé de secours, personne ne peut l'ouvrir. L'accueil te rappelle quand la dernière sauvegarde devient trop vieille ou que des papiers n'y sont pas. |
+| **Sauvegarde automatique** (Android) | Choisis un dossier une fois (Google Drive, clé USB, carte SD) : une sauvegarde chiffrée y part chaque semaine, et dès que tu ajoutes des papiers. Les trois dernières sont gardées. |
 | **Kit d'urgence** | Une sauvegarde et une fiche à confier à un proche, au cas où. |
+| **Sélecteur d'apps** | Dès que tu quittes l'app, son aperçu dans le sélecteur d'apps ne montre que la mascotte, jamais un papier. |
 | **Anti-arnaque** | Faux SMS ANTAI, Ameli, CPF, colis, banque : les liens et les tournures typiques sont repérés. Une arnaque probable n'est jamais classée « à payer ». |
 | **Bouclier vie privée** | Le texte d'un papier peut être partagé avec les numéros personnels masqués (IBAN, sécurité sociale, numéro fiscal…). |
+
+Les copies temporaires (photo prise par l'appareil, PDF choisi) sont effacées dès que le papier est rangé, et le cache de l'app est nettoyé à chaque ouverture du coffre.
 
 Ce qui n'est **pas encore** chiffré : les images des pages, rangées dans l'espace privé de l'app (le chiffrement est sur la feuille de route).
 
@@ -111,6 +115,7 @@ Paperasse peut se tromper : vérifie toujours les dates et les montants sur le p
 - [x] Lecture des photos et des PDF, explication en 4 langues, rappels
 - [x] Coffre chiffré, code secret, code panique, sauvegarde chiffrée, kit d'urgence
 - [x] Scanner, 2D-Doc, dossiers prêts filigranés, moments de vie, profils famille
+- [x] Sauvegarde automatique (Android), mise en page tablette et petits écrans, explications en arabe de droite à gauche
 - [ ] Publication sur le Play Store
 - [ ] Version iPhone
 - [ ] Chiffrement des images des pages

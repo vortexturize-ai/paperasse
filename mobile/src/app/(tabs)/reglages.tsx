@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { useDialog } from "../../components/Dialog";
 import { Icon } from "../../components/Icon";
@@ -79,6 +79,20 @@ export default function Settings() {
     await removePerson(db, person.id);
     setPeople(await listPeople(db));
   };
+
+  // Enregistré pendant la frappe (avec un court délai) : quitter l'onglet sans « valider » ne perd rien.
+  const senderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const changeSender = (value: string) => {
+    setSender(value);
+    if (senderTimer.current) clearTimeout(senderTimer.current);
+    senderTimer.current = setTimeout(() => void setSetting(db, "sender", value.trim()), 600);
+  };
+  useEffect(
+    () => () => {
+      if (senderTimer.current) clearTimeout(senderTimer.current);
+    },
+    [],
+  );
 
   const chooseCapture = async (on: boolean) => {
     setCaptureEverywhere(on);
@@ -301,7 +315,7 @@ export default function Settings() {
       <SectionTitle>Mes coordonnées</SectionTitle>
       <TextInput
         value={sender}
-        onChangeText={setSender}
+        onChangeText={changeSender}
         onBlur={() => void setSetting(db, "sender", sender.trim())}
         placeholder={"Prénom Nom\nAdresse\nCode postal Ville"}
         placeholderTextColor={colors.muted}

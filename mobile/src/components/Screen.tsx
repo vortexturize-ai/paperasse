@@ -1,12 +1,23 @@
 import type { ReactNode } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconButton, txt } from "./ui";
 import { colors } from "./theme";
 
+/** Largeur maximale du contenu : sur tablette, les cartes restent lisibles au lieu de s'étirer. */
+export const CONTENT_MAX_WIDTH = 640;
+
+/** Styles de largeur du contenu selon l'écran (téléphone : toute la largeur ; tablette : colonne centrée). */
+export function useContentWidth(): { wide: boolean; style: { width: "100%"; maxWidth: number; alignSelf: "center" } | null } {
+  const { width } = useWindowDimensions();
+  const wide = width > CONTENT_MAX_WIDTH + 48;
+  return { wide, style: wide ? { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" } : null };
+}
+
 /**
  * Cadre commun des écrans : fond crème, en-tête dessiné (titre, retour ou fermer), contenu qui défile.
- * `bottomSpace` laisse la place à la barre d'onglets.
+ * `bottomSpace` laisse la place à la barre d'onglets ; la zone sûre du bas (barre de navigation Android,
+ * indicateur iPhone) est ajoutée automatiquement. Sur iOS, le clavier pousse le contenu au lieu de le couvrir.
  */
 export function Screen({
   title,
@@ -27,12 +38,15 @@ export function Screen({
   scroll?: boolean;
   bottomSpace?: number;
 }) {
+  const insets = useSafeAreaInsets();
+  const width = useContentWidth();
+  const padding = { paddingBottom: bottomSpace + insets.bottom };
   const head =
     header ?? (
       <View style={styles.header}>
         {onBack ? <IconButton icon="back" label="Retour" onPress={onBack} /> : null}
         {title ? (
-          <Text style={[txt.h1, styles.title]} numberOfLines={1} accessibilityRole="header">
+          <Text style={[txt.h1, styles.title]} numberOfLines={1} accessibilityRole="header" maxFontSizeMultiplier={1.6}>
             {title}
           </Text>
         ) : (
@@ -43,17 +57,20 @@ export function Screen({
       </View>
     );
   return (
-    <SafeAreaView edges={["top"]} style={styles.safe}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
       {scroll ? (
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
+          contentContainerStyle={[styles.content, width.style, padding]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+          contentInsetAdjustmentBehavior="never"
         >
           {head}
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.content, styles.fill, { paddingBottom: bottomSpace }]}>
+        <View style={[styles.content, styles.fill, width.style, padding]}>
           {head}
           {children}
         </View>

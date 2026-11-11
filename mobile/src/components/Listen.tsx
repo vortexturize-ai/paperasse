@@ -60,17 +60,19 @@ const ICONS = { warning: "warning", file: "file", check: "check", euro: "euro", 
 
 /** L'essentiel en gros : une idée par ligne. */
 export function EasyCard({ lines, speech, lang }: { lines: EasyLine[]; speech: string; lang: Lang }) {
+  // Arabe : lignes lues de droite à gauche, icône à droite.
+  const rtl = lang === "ar";
   return (
     <Card>
       <Text style={styles.title}>L’essentiel</Text>
       {lines.map((l, i) => {
         const fg = l.tone === "neutral" ? colors.ink : tones[l.tone].fg;
         return (
-          <View key={i} style={[styles.line, l.tone !== "neutral" && { backgroundColor: tones[l.tone].bg }]}>
+          <View key={i} style={[styles.line, rtl && styles.lineRtl, l.tone !== "neutral" && { backgroundColor: tones[l.tone].bg }]}>
             <Icon name={ICONS[l.icon]} size={30} color={fg} />
             <View style={styles.flex}>
-              <Text style={[styles.label, { color: fg }]}>{l.label}</Text>
-              <Text style={[styles.text, { color: fg }]}>{l.text}</Text>
+              <Text style={[styles.label, { color: fg }, rtl && styles.rtl]}>{l.label}</Text>
+              <Text style={[styles.text, { color: fg }, rtl && styles.rtl]}>{l.text}</Text>
             </View>
           </View>
         );
@@ -83,6 +85,8 @@ export function EasyCard({ lines, speech, lang }: { lines: EasyLine[]; speech: s
 const styles = StyleSheet.create({
   title: { fontFamily: fonts.titleBold, fontSize: 26, color: colors.ink, marginBottom: 6 },
   line: { flexDirection: "row", gap: 14, alignItems: "center", paddingVertical: 10, paddingHorizontal: 8, borderRadius: 14, marginBottom: 6 },
+  lineRtl: { flexDirection: "row-reverse" },
+  rtl: { writingDirection: "rtl", textAlign: "right" },
   flex: { flex: 1 },
   label: { fontFamily: fonts.bodyStrong, fontSize: 16 },
   text: { fontFamily: fonts.body, fontSize: 22, lineHeight: 30 },

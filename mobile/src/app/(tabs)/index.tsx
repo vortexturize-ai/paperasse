@@ -1,12 +1,14 @@
 import { router } from "expo-router";
-import { useState } from "react";
-import type { SQLiteDatabase } from "expo-sqlite";
+import { useMemo, useState } from "react";
+import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mascot, Wordmark } from "../../components/Brand";
 import { Screen } from "../../components/Screen";
 import { colors, fonts, pop, tones } from "../../components/theme";
 import { Icon, type IconName } from "../../components/Icon";
-import { Card, Chip, DocCard, EmptyState, IconButton, SectionTitle, deadlineChip, txt } from "../../components/ui";
+import { Button, Card, Chip, DocCard, EmptyState, IconButton, SectionTitle, deadlineChip, txt } from "../../components/ui";
+import type { BackupNudge } from "../../engine/backupPlan";
+import { homeBackupNudge, snoozeBackupNudge } from "../../lib/autoBackup";
 import { adminCalendar } from "../../engine/calendar";
 import { findMoney } from "../../engine/money";
 import { canReadImages } from "../../lib/ocr";
@@ -18,16 +20,17 @@ import { toPaper } from "../../lib/vault";
 import { useFocusData } from "../../lib/useFocusData";
 
 async function loadHome(db: SQLiteDatabase) {
-  const [toDo, expiring, recent, sender, all, people] = await Promise.all([
+  const [toDo, expiring, recent, sender, all, people, nudge] = await Promise.all([
     listToDo(db),
     listExpiring(db),
     listRecent(db, 6),
     getSetting(db, "sender"),
     listAll(db),
     listPeople(db),
+    homeBackupNudge(db),
   ]);
   const firstName = sender?.trim().split(/\s+/)[0] ?? "";
-  return { toDo, expiring, recent, firstName, all, people };
+  return { toDo, expiring, recent, firstName, all, people, nudge };
 }
 
 /** Ce que voit l'accueil pour une personne (ou pour tout le monde). */
@@ -46,13 +49,44 @@ function forWho(base: Awaited<ReturnType<typeof loadHome>>, who: Who) {
     money: findMoney(papers, today),
     people: base.people,
     anyPaper: base.recent.length > 0,
+    nudge: base.nudge,
   };
 }
 
+const NUDGE_TEXT: Record<BackupNudge["kind"], (n: BackupNudge) => [string, string]> = {
+  jamais: () => ["Tes papiers ne sont sauvegardés nulle part", "Si ce téléphone casse ou se perd, ils sont perdus. Une sauvegarde chiffrée prend une minute."],
+  vieille: (n) => [`Ta dernière sauvegarde date de ${n.kind === "vieille" ? n.days : 0} jours`, "Les papiers ajoutés depuis seraient perdus si le téléphone casse."],
+  nouveaux: (n) => [`${n.kind === "nouveaux" ? n.added : 0} papiers ne sont pas encore sauvegardés`, "Ils seraient perdus si le téléphone casse."],
+  auto_echec: () => ["La sauvegarde automatique n’a pas marché", "Le dossier choisi n’est plus accessible (clé débranchée, accès retiré). Choisis-le à nouveau."],
+};
+
+/** Rappel de sauvegarde : la seule protection quand un téléphone casse. */
+function BackupCard({ nudge, onSnooze }: { nudge: BackupNudge; onSnooze: () => void }) {
+  const [title, text] = NUDGE_TEXT[nudge.kind](nudge);
+  return (
+    <Card tone="orange">
+      <View style={styles.rowCenter}>
+        <Icon name="shield" size={24} color={tones.orange.fg} />
+        <Text style={[txt.h3, { flex: 1, color: tones.orange.fg }]}>{title}</Text>
+      </View>
+      <Text style={txt.small}>{text}</Text>
+      <View style={styles.nudgeButtons}>
+        <Button label={nudge.kind === "auto_echec" ? "Choisir le dossier" : "Sauvegarder"} icon="shield" variant="sun" onPress={() => router.push("/sauvegarde")} style={{ flex: 1 }} />
+        {nudge.kind === "auto_echec" ? null : <Button label="Plus tard" variant="secondary" onPress={onSnooze} style={{ flex: 1 }} />}
+      </View>
+    </Card>
+  );
+}
+
 export default function Home() {
-  const loaded = useFocusData(loadHome).data;
+  const db = useSQLiteContext();
+  const { data: loaded, reload } = useFocusData(loadHome);
   const [who, setWho] = useState<Who>("tous");
-  const data = loaded ? forWho(loaded, loaded.people.some((p) => p.id === who) || who === "moi" ? who : "tous") : null;
+  // Calendrier et pistes d'argent passent sur tous les papiers : calculés une fois par chargement, pas à chaque rendu.
+  const data = useMemo(
+    () => (loaded ? forWho(loaded, loaded.people.some((p) => p.id === who) || who === "moi" ? who : "tous") : null),
+    [loaded, who],
+  );
   const late = data?.toDo.filter((d) => d.deadline !== null && daysUntil(d.deadline) < 0).length ?? 0;
   const count = data?.toDo.length ?? 0;
   const empty = data !== null && !data.anyPaper;
@@ -91,6 +125,15 @@ export default function Home() {
           </View>
           <Mascot size={62} tilt={8} />
         </View>
+      ) : null}
+
+      {data?.nudge ? (
+        <BackupCard
+          nudge={data.nudge}
+          onSnooze={() => {
+            void snoozeBackupNudge(db).then(reload);
+          }}
+        />
       ) : null}
 
       {empty ? (
@@ -178,6 +221,7 @@ function Tile({ icon, label, color, onPress }: { icon: IconName; label: string; 
 }
 
 const styles = StyleSheet.create({
+  nudgeButtons: { flexDirection: "row", gap: 10, marginTop: 10 },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   tile: { flexBasis: "47%", flexGrow: 1, alignItems: "center", justifyContent: "center", gap: 6, minHeight: 92, borderRadius: 20, borderWidth: 3, borderColor: colors.ink, padding: 10 },
   rowCenter: { flexDirection: "row", alignItems: "center", gap: 12 },

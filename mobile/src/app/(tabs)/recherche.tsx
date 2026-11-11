@@ -1,12 +1,15 @@
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { FlatList, Platform, StyleSheet, TextInput, View } from "react-native";
 import { Icon } from "../../components/Icon";
 import { Screen } from "../../components/Screen";
 import { border, colors, fonts, pop } from "../../components/theme";
 import { DocCard, EmptyState } from "../../components/ui";
 import { searchDocuments } from "../../lib/db";
 import type { DocumentRecord } from "../../lib/types";
+
+const keyOf = (d: DocumentRecord) => d.id;
+const renderDoc = ({ item }: { item: DocumentRecord }) => <DocCard doc={item} showDeadline={false} />;
 
 export default function Search() {
   const db = useSQLiteContext();
@@ -30,8 +33,10 @@ export default function Search() {
     };
   }, [db, query]);
 
+  const settled = searched === query;
+
   return (
-    <Screen title="Chercher">
+    <Screen title="Chercher" scroll={false} bottomSpace={0}>
       <View style={[styles.field, pop(4)]}>
         <Icon name="search" size={22} strokeWidth={2.6} />
         <TextInput
@@ -46,16 +51,28 @@ export default function Search() {
           accessibilityLabel="Chercher dans mes papiers"
         />
       </View>
-      {results.map((d) => (
-        <DocCard key={d.id} doc={d} showDeadline={false} />
-      ))}
-      {results.length === 0 && searched === query ? (
-        query.trim() ? (
-          <EmptyState title="Je n’ai rien trouvé" text="Essaie un autre mot : qui a envoyé le papier, son type, un montant…" />
-        ) : (
-          <EmptyState title="Je cherche dans tout le texte" text="Même dans les papiers pris en photo, avec ou sans accents." />
-        )
-      ) : null}
+      <FlatList
+        data={results}
+        keyExtractor={keyOf}
+        renderItem={renderDoc}
+        contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          settled ? (
+            query.trim() ? (
+              <EmptyState title="Je n’ai rien trouvé" text="Essaie un autre mot : qui a envoyé le papier, son type, un montant…" />
+            ) : (
+              <EmptyState title="Je cherche dans tout le texte" text="Même dans les papiers pris en photo, avec ou sans accents." />
+            )
+          ) : undefined
+        }
+        initialNumToRender={10}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === "android"}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+      />
     </Screen>
   );
 }
@@ -73,4 +90,5 @@ const styles = StyleSheet.create({
     minHeight: 54,
   },
   input: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.ink, paddingVertical: 12 },
+  list: { gap: 14, paddingBottom: 32, paddingTop: 4 },
 });

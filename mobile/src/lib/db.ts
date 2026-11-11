@@ -15,6 +15,9 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
   const version = row?.user_version ?? 0;
   if (version >= SCHEMA_VERSION) return;
 
+  // Les étapes et le numéro de version passent dans une seule transaction :
+  // une coupure en plein milieu ne laisse jamais un schéma à moitié fait.
+  await db.withTransactionAsync(async () => {
   if (version < 1) {
     await db.execAsync(`
       CREATE TABLE documents (
@@ -78,6 +81,7 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
     `);
   }
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
+  });
 }
 
 export type SettingKey =
@@ -86,6 +90,11 @@ export type SettingKey =
   | "easy_read"
   | "backup_last"
   | "reminders_mode"
+  | "backup_papers"
+  | "backup_folder"
+  | "backup_files"
+  | "backup_error"
+  | "backup_snooze"
   | "language"
   | "sender"
   | "onboarding_done"
