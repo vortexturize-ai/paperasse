@@ -174,6 +174,8 @@ npx expo run:android
 
 Ensuite, tant qu'aucun module natif ne change : `npx expo start --dev-client`.
 
+**Sur iPhone sans Mac**, avec Expo Go : un compte Expo gratuit, connecté sur l'ordinateur (`npx expo login`) et dans Expo Go, l'identifiant d'un projet expo.dev dans `mobile/.env.local` (`EAS_PROJECT_ID=…`, fichier jamais envoyé sur le dépôt), puis `npx expo start --go`. Expo Go ne lit pas les photos et n'a pas le coffre chiffré : pour tout essayer, il faut un vrai build.
+
 `mobile/android/` est généré par `npx expo prebuild` : les réglages natifs passent par `mobile/app.json` et `mobile/plugins/`.
 
 ### Vérifier
