@@ -20,6 +20,8 @@ import { cancelReminders, scheduledReminderIds, scheduleReminders } from "./noti
 import { readPdf } from "./pdfread";
 import { readImages } from "./ocr";
 import { reminderPlans, selectReminders, type ReminderPlan } from "./reminders";
+import { canFindTwoDDocInPhotos, findTwoDDoc } from "./twoDDocScan";
+import { codeFacts } from "../engine/twoDDoc";
 import { formatDate, todayIso } from "./text";
 import type { DocumentRecord, PendingPage } from "./types";
 
@@ -87,6 +89,17 @@ export async function runAnalysis(db: SQLiteDatabase, id: string, language: stri
     if (result.emetteur) {
       const learned = await getSetting(db, `learn:${fold(result.emetteur)}`);
       if (learned) result.categorie = learned;
+    }
+    // Code 2D-Doc sur les photos (Android) : son type, et sa date de fin de validité quand le texte n'en donne pas.
+    if (canFindTwoDDocInPhotos) {
+      // Le code est en haut ou en bas de la première page : 2 pages regardées au plus, pour rester rapide.
+      const images = (await getFiles(db, id)).filter((f) => f.mime.startsWith("image/")).map((f) => uriFor(f.path)).slice(0, 2);
+      const code = images.length ? await findTwoDDoc(images) : null;
+      if (code) {
+        const extra = codeFacts(code);
+        result.infos_cles = [...result.infos_cles, ...extra.facts];
+        if (!result.date_expiration && extra.expiry) result.date_expiration = extra.expiry;
+      }
     }
     await applyAnalysis(db, id, result, language);
   } catch (e) {

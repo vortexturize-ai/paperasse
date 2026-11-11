@@ -1,8 +1,8 @@
-import { CameraView, scanFromURLAsync, useCameraPermissions } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
 import { border, colors, fonts, tones } from "../components/theme";
 import { Button, Card, Chip, SectionTitle, SpeechBubble, txt } from "../components/ui";
@@ -12,6 +12,7 @@ import { uriFor } from "../lib/files";
 import { goBack } from "../lib/nav";
 import { useNoScreenshots } from "../lib/privacyScreen";
 import { formatDate } from "../lib/text";
+import { findTwoDDoc } from "../lib/twoDDocScan";
 
 type Phase = "searching" | "notFound" | "camera" | "result";
 
@@ -33,21 +34,8 @@ export default function TwoDDocScreen() {
     (async () => {
       const doc = await getDocument(db, docId);
       const text = doc?.fullText ?? null;
-      let found: TwoDDoc | null = null;
-      if (Platform.OS === "android") {
-        for (const f of await getFiles(db, docId)) {
-          if (!f.mime.startsWith("image/")) continue;
-          try {
-            for (const r of await scanFromURLAsync(uriFor(f.path), ["datamatrix"])) {
-              found = parse2DDoc(r.raw ?? r.data) ?? parse2DDoc(r.data);
-              if (found) break;
-            }
-          } catch {
-            // image illisible : on essaie la suivante
-          }
-          if (found) break;
-        }
-      }
+      const images = (await getFiles(db, docId)).filter((f) => f.mime.startsWith("image/")).map((f) => uriFor(f.path));
+      const found = await findTwoDDoc(images);
       if (!alive) return;
       setPaperText(text);
       setCode(found);

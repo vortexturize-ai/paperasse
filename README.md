@@ -56,7 +56,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 - **Explication en 4 langues** : français, anglais, espagnol et arabe, pour comprendre un papier français même si ce n'est pas ta langue.
 - **Les mots difficiles** expliqués sur place (allocataire, recours gracieux, trop-perçu…).
 - **Courriers de réponse** prêts à envoyer : demander un délai de paiement, contester, demander des explications, envoyer un justificatif, résilier un contrat ou une assurance, recours gracieux, réclamer une somme ou un dépôt de garantie.
-- **Code 2D-Doc** des papiers officiels lu et comparé au texte du papier, d'après la spécification de l'ANTS.
+- **Code 2D-Doc** des papiers officiels lu et comparé au texte du papier, d'après la spécification de l'ANTS : factures, banque, impôts, travail, mais aussi titres d'identité et de séjour, actes de commissaire de justice, véhicules (certificat qualité de l'air, cession), permis de conduire, diplômes, certificat de décès, preuve de vie, demande d'asile, vaccination. Sur Android, le code est cherché dès l'ajout de la photo : sa date de fin de validité arrive dans les rappels.
 - **Vérification de la fiche de paie** : taux horaire comparé au SMIC en vigueur à la date de la paie, calcul brut − cotisations = net vérifié.
 
 ## Ranger toute une vie
@@ -108,7 +108,7 @@ L'analyse est testée sur un banc d'essai qui grandit à chaque bug trouvé :
 - des **photos mal lues simulées** (lettres et chiffres confondus, accents perdus, lignes coupées ou mélangées, parasites) ;
 - des milliers de textes aléatoires pour vérifier que rien ne plante ni ne ralentit ;
 - un **lot écrit à l'aveugle**, après réglage : 91,7 % des champs justes du premier coup ;
-- les **exemples officiels de l'ANTS** pour le 2D-Doc, à l'octet près.
+- les **67 exemples officiels de l'ANTS** pour le 2D-Doc, recopiés à l'octet près : chaque signature est vérifiée avec le certificat de test de la spécification.
 
 Paperasse peut se tromper : vérifie toujours les dates et les montants sur le papier. Il ne remplace pas un conseiller.
 

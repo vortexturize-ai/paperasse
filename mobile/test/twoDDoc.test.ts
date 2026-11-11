@@ -1,7 +1,9 @@
 // Exemples officiels de la spécification 2D-DOC (ANTS, V 3.3.9).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { base32Decode, crossCheck, hexDate, parse2DDoc, parseMessage } from "../src/engine/twoDDoc.ts";
+import { X509Certificate, verify } from "node:crypto";
+import { base32Decode, codeFacts, crossCheck, hexDate, parse2DDoc, parseMessage } from "../src/engine/twoDDoc.ts";
+import { CERTIFICAT_TEST, EXEMPLES_OFFICIELS } from "./outils/deuxdoc-officiels.ts";
 
 const GS = "\x1d";
 const RS = "\x1e";
@@ -103,12 +105,14 @@ test("attestation 2041-ASK, dons, cession (exemples officiels 21, 19, 20)", () =
 });
 
 test("identifiant que Paperasse ne connaît pas encore : rien d'inventé, la suite est gardée telle quelle", () => {
-  const d = parse2DDoc(`DC04FR000001125E125B1701FR60JEAN/MARTIN${GS}6925121969${US}JEW7ZPEPOE5CK4BZ4PE36L2HUB`)!;
-  assert.equal(d.docTypeLabel, "Attestation de fin de droit à l'ADA");
+  // Section 7.13 (tests virologiques) : pas décodée.
+  const d = parse2DDoc(`DC04FR000001125E125BB201FR60JEAN/MARTIN${GS}6925121969F0CORRINE${GS}F1BERTHIER${US}JEW7ZPEPOE5CK4BZ4PE36L2HUB`)!;
+  assert.equal(d.docTypeLabel, "Test COVID");
   assert.equal(d.issued, "2012-11-15", "125E – 15 novembre 2012");
   assert.equal(d.signed, "2012-11-12", "125B – 12 novembre 2012");
-  assert.deepEqual(d.fields, []);
-  assert.equal(d.undecoded, `60JEAN/MARTIN${GS}6925121969`);
+  assert.deepEqual(pairs(d), [["60", "JEAN/MARTIN"], ["69", "25121969"]]);
+  assert.equal(d.fields[1].value, "25/12/1969");
+  assert.equal(d.undecoded, `F0CORRINE${GS}F1BERTHIER`);
 });
 
 test("facture (règles de la section 3.4.1) : fixe sans séparateur, variable avec <GS>, longueur maximale, troncature <RS>", () => {
@@ -174,4 +178,133 @@ test("comparaison avec le papier : le code dit une chose, le papier une autre", 
     "Avis d'impôt. M. RETI Patrick, Mme RETI Sophie. Référence 2278012345678. Revenu fiscal de référence : 13 198 €. N° fiscal 3001123456789 0701987765432.",
   );
   assert.deepEqual(forged.missing.map((m) => m.id), ["41"], "revenu modifié à la main : repéré");
+});
+
+// ---- Les 67 exemples officiels de la spécification (identité, santé, véhicules, diplômes, permis, asile…) ----
+
+const officiel = (type: string, i = 0) => EXEMPLES_OFFICIELS.filter((e) => e.type === type)[i]!;
+const field = (d: NonNullable<ReturnType<typeof parse2DDoc>>, id: string) => d.fields.find((f) => f.id === id);
+
+test("exemples officiels : chaque signature est valide avec le certificat de test (fixtures exactes, découpage juste)", () => {
+  const key = new X509Certificate(CERTIFICAT_TEST).publicKey;
+  assert.equal(EXEMPLES_OFFICIELS.length, 67);
+  for (const e of EXEMPLES_OFFICIELS) {
+    const d = parse2DDoc(e.code);
+    assert.ok(d, `${e.type} : pas lu`);
+    assert.equal(d.version, e.version);
+    assert.equal(d.docType, e.type);
+    assert.ok(d.signature && d.signature.length === 64, `${e.type} : signature P-256 de 64 octets`);
+    const ok = verify("sha256", Buffer.from(d.signedData, "latin1"), { key, dsaEncoding: "ieee-p1363" }, d.signature);
+    assert.ok(ok, `${e.type} (v${e.version}) : signature invalide`);
+  }
+});
+
+test("exemples officiels : tout est décodé, sauf les sections 7.13 (tests virologiques) et 7.18 (sûreté aéroportuaire)", () => {
+  const notYet = new Set(["B2", "26"]);
+  for (const e of EXEMPLES_OFFICIELS) {
+    const d = parse2DDoc(e.code)!;
+    if (notYet.has(e.type)) assert.ok(d.undecoded, e.type);
+    else assert.equal(d.undecoded, null, `${e.type} : reste ${JSON.stringify(d.undecoded?.slice(0, 20))}`);
+  }
+});
+
+test("titre d'identité et document étranger (exemples officiels 07 et 13)", () => {
+  const id = parse2DDoc(officiel("07").code)!;
+  assert.deepEqual(pairs(id), [["60", "NATACHA"], ["62", "SPECIMEN"], ["65", "P "], ["66", "07CD12304"], ["67", "FR"], ["68", "F"], ["6C", "FR"]]);
+  assert.equal(field(id, "65")!.value, "passeport", "2 caractères fixes : « P » suivi d'une espace");
+  assert.equal(field(id, "68")!.value, "féminin");
+  const etr = parse2DDoc(officiel("13").code)!;
+  assert.equal(field(etr, "6K")!.raw, "9201202004012359123");
+  assert.equal(field(etr, "6Q")!.raw, "7503120521", "10 caractères (maximum) : pas de séparateur après");
+  assert.equal(field(etr, "6N")!.value, "01/05/2020");
+  assert.equal(field(etr, "6O")!.value, "30/06/2020");
+  assert.equal(field(etr, "6M")!.raw, "ENFANT ENTRE PAR REGROUPEMENT FAMILIAL");
+});
+
+test("véhicules : certificat qualité de l'air, cession, courrier de points (exemples officiels A0, A7, A8, A1)", () => {
+  const air = parse2DDoc(officiel("A0").code)!;
+  assert.equal(field(air, "A1")!.raw, "BH-999-VX");
+  assert.equal(field(air, "A5")!.raw, "M1 ", "3 caractères fixes, espace compris");
+  assert.equal(field(air, "A7")!.value, "130 g/km", "082 en hexadécimal");
+  assert.equal(field(air, "A9")!.value, "classe 5");
+  assert.equal(field(air, "AA")!.value, "01/01/1999");
+  assert.equal(field(parse2DDoc(officiel("A7").code)!, "AM")!.raw, "FAP");
+  const cession = parse2DDoc(officiel("A8").code)!;
+  assert.equal(field(cession, "AN")!.value, "1 337");
+  assert.equal(field(cession, "C3")!.value, "02/03/2020 à 14 h 00");
+  assert.equal(field(cession, "CB")!.value, "123 456");
+  assert.equal(field(cession, "C0")!.value, "masculin");
+  const points = parse2DDoc(officiel("A1").code)!;
+  assert.equal(field(points, "AD")!.value, "01/01/2016", "16D4 en jours depuis 2000");
+  assert.equal(field(points, "AE")!.value, "01 h 32");
+  assert.equal(field(points, "AF")!.value, "4");
+  assert.equal(field(points, "AG")!.value, "8");
+});
+
+test("permis de conduire : arrêté et relevé d'information (exemples officiels AA, AB)", () => {
+  const arrete = parse2DDoc(officiel("AA").code)!;
+  assert.equal(field(arrete, "E0")!.value, "suspension provisoire du permis");
+  assert.equal(field(arrete, "E2")!.value, "09/05/2013");
+  assert.equal(field(arrete, "AC")!.raw, "0123456789ABCDEF");
+  const releve = parse2DDoc(officiel("AB").code)!;
+  assert.equal(field(releve, "E4")!.value, "attestation de permis de conduire");
+  assert.equal(field(releve, "E5")!.value, "valide", "annexe 13 : 50 = VALIDE");
+  assert.equal(field(releve, "E8")!.value, "02/02/2021 à 15 h 22");
+  assert.equal(field(releve, "09")!.raw, "0003");
+  assert.match(field(releve, "E6")!.raw, /^A B C D B1 .* AM$/);
+});
+
+test("santé, retraite, études, asile, vaccin, caducée (exemples officiels AE, 23, B0, B1, 16, L1, C9)", () => {
+  const deces = parse2DDoc(officiel("AE").code)!;
+  assert.equal(field(deces, "71")!.value, "20/04/2017 à 00 h 00");
+  assert.equal(field(deces, "72")!.raw, "SPECIMEN");
+  const vie = parse2DDoc(officiel("23").code)!;
+  assert.equal(field(vie, "8D")!.value, "02/01/2024 à 07 h 16 min 53 s");
+  assert.equal(field(vie, "8C")!.raw, "0123456789", "10 caractères (maximum) : pas de séparateur après");
+  assert.equal(field(vie, "8G")!.value, "oui");
+  const diplome = parse2DDoc(officiel("B0").code)!;
+  assert.equal(field(diplome, "BG")!.value, "master");
+  assert.equal(field(diplome, "BF")!.value, "2014-2015", "7DF = 2015");
+  assert.equal(field(diplome, "BD")!.raw, "7");
+  const cvec = parse2DDoc(officiel("B1").code)!;
+  assert.equal(field(cvec, "BK")!.raw, "18-ROSWFTHR-35");
+  assert.equal(field(cvec, "B3")!.raw, "", "champ vide suivi d'un <GS>");
+  const asile = parse2DDoc(officiel("16").code)!;
+  assert.equal(field(asile, "G0")!.value, "procédure normale");
+  assert.equal(field(asile, "G1")!.value, "Bretagne");
+  assert.equal(field(asile, "6O")!.value, "30/07/2021");
+  const vaccin = parse2DDoc(officiel("L1").code)!;
+  assert.equal(field(vaccin, "L3")!.raw, "COVID-19");
+  assert.equal(field(vaccin, "LA")!.value, "terminé");
+  const caducee = parse2DDoc(officiel("C9").code)!;
+  assert.equal(field(caducee, "I0")!.raw, "2023");
+});
+
+test("huissier : adresse du document en ligne en Base32 (exemple officiel 12)", () => {
+  const d = parse2DDoc(officiel("12").code)!;
+  assert.equal(field(d, "96")!.value, "21/11/2017");
+  assert.equal(field(d, "0C")!.value, "huissier-justice.fr/1896547853AB");
+});
+
+test("EORI des autorisations douanières : 17 caractères sans séparateur (exemples officiels C2, C3, C5, C6)", () => {
+  for (const type of ["C2", "C3", "C5", "C6"]) {
+    const d = parse2DDoc(officiel(type).code)!;
+    assert.equal(d.undecoded, null, type);
+    for (const f of d.fields.filter((x) => ["D2", "DH", "DP", "DW"].includes(x.id))) assert.match(f.raw, /^FR\d{15}$/, `${type}/${f.id}`);
+  }
+});
+
+test("fiche du papier : fin de validité et type lus dans le code, jamais de numéro personnel", () => {
+  const etr = codeFacts(parse2DDoc(officiel("13").code)!);
+  assert.equal(etr.expiry, "2020-06-30");
+  assert.deepEqual(etr.facts.map((f) => f.label), ["Code 2D-Doc", "Fin de validité (code 2D-Doc)"]);
+  assert.equal(etr.facts[1].valeur, "30/06/2020");
+  assert.equal(codeFacts(parse2DDoc(officiel("AC").code)!).expiry, "2031-07-07", "AI : date d'expiration initiale");
+  assert.equal(codeFacts(parse2DDoc(officiel("04").code)!).expiry, null);
+  for (const e of EXEMPLES_OFFICIELS) {
+    const shown = JSON.stringify(codeFacts(parse2DDoc(e.code)!).facts);
+    assert.doesNotMatch(shown, /SPECIMEN|NATACHA|7503120521|07CD12304|\d{13}/, e.type);
+  }
+  // Date impossible : ignorée plutôt qu'inventée.
+  assert.equal(codeFacts(parse2DDoc(`DC04FR000001125E125B1301FR6O31022020${US}AAAA`)!).expiry, null);
 });
