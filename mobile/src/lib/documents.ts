@@ -10,12 +10,13 @@ import {
   getFiles,
   getSetting,
   insertDocument,
+  listAll,
   setAnalysisStatus,
   setSetting,
   updateDocument,
 } from "./db";
 import { deleteDocumentFiles, deletePages, storePages, uriFor } from "./files";
-import { cancelReminders, scheduleReminders } from "./notifications";
+import { cancelReminders, scheduledReminderIds, scheduleReminders } from "./notifications";
 import { readPdf } from "./pdfread";
 import { readImages } from "./ocr";
 import { formatDate, todayIso } from "./text";
@@ -104,6 +105,25 @@ export async function refreshReminders(db: SQLiteDatabase, id: string): Promise<
   if (!doc) return;
   const ids = await scheduleReminders(doc);
   await updateDocument(db, id, { notificationIds: ids });
+}
+
+/**
+ * À l'ouverture du vrai coffre : reprogramme les rappels effacés (par le coffre leurre) ou écrits dans
+ * l'autre mode (discret / détaillé). Les papiers sans rappel manquant ne sont pas touchés.
+ */
+export async function syncReminders(db: SQLiteDatabase, discreet: boolean): Promise<void> {
+  const wanted = discreet ? "discret" : "detail";
+  const modeChanged = (await getSetting(db, "reminders_mode")) !== wanted;
+  const scheduled = await scheduledReminderIds();
+  const today = new Date().toISOString().slice(0, 10);
+  for (const doc of await listAll(db)) {
+    const upcoming = (doc.deadline !== null && !doc.isDone && doc.deadline >= today) || (doc.expiryDate !== null && doc.expiryDate >= today);
+    const missing = doc.notificationIds.some((id) => !scheduled.has(id));
+    if ((upcoming && (modeChanged || missing || doc.notificationIds.length === 0)) || (!upcoming && doc.notificationIds.length > 0 && missing)) {
+      await refreshReminders(db, doc.id);
+    }
+  }
+  if (modeChanged) await setSetting(db, "reminders_mode", wanted);
 }
 
 export async function setDone(db: SQLiteDatabase, doc: DocumentRecord, done: boolean): Promise<void> {

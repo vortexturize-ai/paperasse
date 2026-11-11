@@ -1,8 +1,7 @@
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
 import { Platform } from "react-native";
-import { DEADLINE_OFFSETS, EXPIRY_OFFSETS, reminderDates } from "./reminders";
-import { formatDate } from "./text";
+import { reminderPlans } from "./reminders";
 import type { DocumentRecord } from "./types";
 
 const CHANNEL_ID = "echeances";
@@ -46,10 +45,10 @@ export async function ensurePermission(): Promise<boolean> {
   return asked.granted;
 }
 
-function when(daysBefore: number): string {
-  if (daysBefore === 0) return "aujourd'hui";
-  if (daysBefore === 1) return "demain";
-  return `dans ${daysBefore} jours`;
+// Coffre leurre : aucun rappel (ni les siens, ni ceux du vrai coffre). Code secret : rappels discrets.
+let mode = { muted: false, discreet: false };
+export function setReminderMode(next: { muted: boolean; discreet: boolean }): void {
+  mode = next;
 }
 
 /**
@@ -59,26 +58,8 @@ function when(daysBefore: number): string {
 export async function scheduleReminders(doc: DocumentRecord): Promise<string[]> {
   if (!remindersSupported) return [];
   await cancelReminders(doc.notificationIds);
-  const plans: { date: Date; title: string; body: string }[] = [];
-
-  if (doc.deadline && !doc.isDone) {
-    for (const { date, daysBefore } of reminderDates(doc.deadline, DEADLINE_OFFSETS)) {
-      plans.push({
-        date,
-        title: `⏰ À faire ${when(daysBefore)} (${formatDate(doc.deadline)})`,
-        body: `${doc.deadlineLabel ?? "Date limite"} : ${doc.title}`,
-      });
-    }
-  }
-  if (doc.expiryDate) {
-    for (const { date, daysBefore } of reminderDates(doc.expiryDate, EXPIRY_OFFSETS)) {
-      plans.push({
-        date,
-        title: `📅 Expire ${when(daysBefore)} (${formatDate(doc.expiryDate)})`,
-        body: `${doc.title} : pense à le renouveler.`,
-      });
-    }
-  }
+  if (mode.muted) return [];
+  const plans = reminderPlans(doc, mode.discreet);
   if (plans.length === 0 || !(await ensurePermission())) return [];
 
   const channel = (await channelReady) ? { channelId: CHANNEL_ID } : {};
@@ -92,6 +73,18 @@ export async function scheduleReminders(doc: DocumentRecord): Promise<string[]> 
     );
   }
   return ids;
+}
+
+/** Tous les rappels programmés sur le téléphone (ceux du vrai coffre compris). */
+export async function cancelAllReminders(): Promise<void> {
+  if (!remindersSupported) return;
+  await Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
+}
+
+export async function scheduledReminderIds(): Promise<Set<string>> {
+  if (!remindersSupported) return new Set();
+  const all = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  return new Set(all.map((n) => n.identifier));
 }
 
 export async function cancelReminders(ids: string[]): Promise<void> {

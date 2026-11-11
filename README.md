@@ -83,8 +83,8 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 | Protection | Ce que ça fait |
 |---|---|
 | **Coffre chiffré** | La base des papiers est chiffrée (SQLCipher, AES-256). La clé reste dans la puce de sécurité du téléphone. |
-| **Code secret** | Demandé à l'ouverture et après une minute sans utiliser l'app. Attente croissante après plusieurs erreurs. |
-| **Code panique** | Un second code qui ouvre un coffre vide, d'apparence normale. Les vrais papiers restent chiffrés et cachés. |
+| **Code secret** | Demandé à l'ouverture et après une minute sans utiliser l'app. Attente croissante après plusieurs erreurs. Les rappels ne montrent plus le nom des papiers sur l'écran verrouillé. |
+| **Code panique** | Un second code qui ouvre un coffre vide, d'apparence normale. Les vrais papiers restent chiffrés et cachés, et leurs rappels se taisent. |
 | **Captures d'écran** | Toujours bloquées sur les pièces sensibles (identité, banque, santé), et partout si tu le choisis. |
 | **Sauvegarde** | Un seul fichier chiffré de bout en bout, à ranger où tu veux. Sans ta clé de secours, personne ne peut l'ouvrir. |
 | **Kit d'urgence** | Une sauvegarde et une fiche à confier à un proche, au cas où. |

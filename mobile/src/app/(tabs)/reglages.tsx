@@ -137,7 +137,7 @@ export default function Settings() {
             <Text style={txt.strong}>{vault.hasPin ? "Code secret activé" : "Code secret"}</Text>
             <Text style={txt.small}>
               {vault.hasPin
-                ? "Demandé à l’ouverture et après 1 minute sans utiliser l’app."
+                ? "Demandé à l’ouverture et après 1 minute sans utiliser l’app. Les rappels ne montrent plus le nom de tes papiers."
                 : "Un code à toi pour ouvrir Paperasse, en plus du verrouillage du téléphone."}
             </Text>
           </View>
@@ -168,7 +168,7 @@ export default function Settings() {
           <Text style={txt.strong}>Code panique {vault.hasPanic ? "prêt" : ""}</Text>
           <Text style={txt.small}>
             Un second code qui ouvre un coffre vide, qui a l’air normal. Si quelqu’un t’oblige à ouvrir Paperasse, tape celui-là : tes
-            vrais papiers restent chiffrés et cachés.
+            vrais papiers restent chiffrés et cachés, et leurs rappels se taisent.
           </Text>
           <View style={styles.buttons}>
             <Button

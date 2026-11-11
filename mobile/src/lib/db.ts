@@ -85,6 +85,7 @@ export type SettingKey =
   | "capture_block"
   | "easy_read"
   | "backup_last"
+  | "reminders_mode"
   | "language"
   | "sender"
   | "onboarding_done"

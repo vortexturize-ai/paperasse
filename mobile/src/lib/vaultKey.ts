@@ -3,7 +3,8 @@ import { File } from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import { defaultDatabaseDirectory, deleteDatabaseAsync, openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import { Platform } from "react-native";
-import { migrate, setSetting } from "./db";
+import { getFiles, listAll, migrate, setSetting } from "./db";
+import { deletePages } from "./files";
 
 export type VaultKind = "reel" | "leurre";
 
@@ -192,9 +193,45 @@ export async function seedDecoy(language: string | null): Promise<void> {
   }
 }
 
-/** Efface le coffre leurre et sa clé (quand on retire le code panique). */
+/** Chemins des pages du vrai coffre (lecture seule), ou null s'il ne peut pas être lu. */
+async function realPagePaths(): Promise<Set<string> | null> {
+  try {
+    const key = await SecureStore.getItemAsync(KEY_IDS.reel, STORE_OPTIONS);
+    const name = key ? NAMES.reel : PLAIN_DB;
+    if (!dbExists(name)) return new Set();
+    const db = await openDatabaseAsync(name);
+    try {
+      if (key) await applyKey(db, key);
+      return new Set((await db.getAllAsync<{ path: string }>("SELECT path FROM files")).map((r) => r.path));
+    } finally {
+      await db.closeAsync();
+    }
+  } catch {
+    return null;
+  }
+}
+
+/** Efface le coffre leurre, les pages des papiers qu'on y a ajoutés, et sa clé (quand on retire le code panique). */
 export async function forgetDecoy(): Promise<void> {
   const cfg = await prepareVault("leurre");
+  // Une sauvegarde du vrai coffre restaurée dans le leurre peut partager des fichiers de pages avec lui :
+  // ceux-là ne sont jamais effacés. Si le vrai coffre ne peut pas être lu, on n'efface aucune page.
+  const keep = await realPagePaths();
+  if (keep) {
+    try {
+      const db = await openDatabaseAsync(cfg.databaseName);
+      try {
+        await applyKey(db, cfg.key);
+        for (const doc of await listAll(db)) {
+          deletePages(doc.id, (await getFiles(db, doc.id)).map((f) => f.path).filter((p) => !keep.has(p)));
+        }
+      } finally {
+        await db.closeAsync();
+      }
+    } catch {
+      // coffre leurre jamais ouvert ou illisible : rien à effacer à part lui
+    }
+  }
   await deleteDatabaseAsync(cfg.databaseName).catch(() => undefined);
   await SecureStore.deleteItemAsync(KEY_IDS.leurre, STORE_OPTIONS).catch(() => undefined);
 }

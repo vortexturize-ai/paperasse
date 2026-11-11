@@ -174,6 +174,8 @@ export async function peekBackup(uri: string): Promise<BackupHeader> {
  * Restaure une sauvegarde ou un kit : ajoute les papiers absents de ce téléphone (rien n'est écrasé).
  * Les pages sont d'abord écrites à part ; la base n'est touchée qu'une fois tout lu et vérifié.
  */
+const toHexId = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+
 export async function restoreBackup(db: SQLiteDatabase, uri: string, code: string, onProgress?: Progress): Promise<RestoreReport> {
   const src = new File(uri);
   const size = src.size ?? 0;
@@ -229,7 +231,9 @@ export async function restoreBackup(db: SQLiteDatabase, uri: string, code: strin
       for (const f of plan.files) {
         const dir = new Directory(Paths.document, "docs", f.document_id);
         dir.create({ intermediates: true, idempotent: true });
-        const path = `docs/${f.document_id}/restaure-${f.id}.${extensionFor(f.mime)}`;
+        // Jamais par-dessus un fichier existant : l'autre coffre peut avoir restauré la même sauvegarde.
+        let path = `docs/${f.document_id}/restaure-${f.id}.${extensionFor(f.mime)}`;
+        if (fileFor(path).exists) path = `docs/${f.document_id}/restaure-${f.id}-${toHexId(getRandomBytes(4))}.${extensionFor(f.mime)}`;
         await new File(staging, f.id).move(fileFor(path));
         placed.push({ row: f, path });
       }
