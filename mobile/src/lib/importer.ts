@@ -2,7 +2,9 @@ import type { SQLiteDatabase } from "expo-sqlite";
 import { Directory, File, Paths } from "expo-file-system";
 import { randomUUID } from "expo-crypto";
 import { kindOfName, unpackArchive } from "../engine/archive";
-import { createDocument } from "./documents";
+import { getDocument } from "./db";
+import { createDocument, removeDocument } from "./documents";
+import { findDuplicate } from "./duplicates";
 import { MAX_PDF_BYTES, discardTemp, prepareImageAuto } from "./files";
 import type { PendingPage } from "./types";
 
@@ -20,6 +22,8 @@ export interface ImportReport {
   created: string[];
   failed: { name: string; reason: string }[];
   skipped: { name: string; reason: string }[];
+  /** Rangés, mais qui ressemblent beaucoup à un papier déjà là. */
+  similar: { name: string; reason: string }[];
 }
 
 function tmpDir(): Directory {
@@ -65,7 +69,7 @@ export async function itemsFromZip(item: IncomingItem): Promise<{ items: Incomin
  * sinon, un papier par fichier. Les PDF et les textes font toujours un papier chacun.
  */
 export async function importItems(db: SQLiteDatabase, input: IncomingItem[], opts: { together: boolean; language: string }): Promise<ImportReport> {
-  const report: ImportReport = { created: [], failed: [], skipped: [] };
+  const report: ImportReport = { created: [], failed: [], skipped: [], similar: [] };
   const items: IncomingItem[] = [];
   for (const it of input) {
     if (kindOf(it) === "zip") {
@@ -83,6 +87,17 @@ export async function importItems(db: SQLiteDatabase, input: IncomingItem[], opt
   const save = async (name: string, pages: PendingPage[], text?: string) => {
     try {
       const { id, analysisError } = await createDocument(db, pages, { read: true, language: opts.language, text, title: name.replace(/\.[a-z0-9]+$/i, "") });
+      // Même fichier ou même texte qu'un papier déjà rangé (dossier importé deux fois) : pas de second exemplaire.
+      const dup = await findDuplicate(db, id).catch(() => null);
+      if (dup && dup.kind !== "proche") {
+        const added = await getDocument(db, id);
+        if (added) {
+          await removeDocument(db, added);
+          report.skipped.push({ name, reason: `déjà dans ton coffre (« ${dup.doc.title} »)` });
+          return;
+        }
+      }
+      if (dup) report.similar.push({ name, reason: `ressemble beaucoup à « ${dup.doc.title} », peut-être en double` });
       report.created.push(id);
       if (analysisError) report.failed.push({ name, reason: analysisError });
     } catch (e) {

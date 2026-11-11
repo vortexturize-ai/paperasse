@@ -21,7 +21,7 @@ import {
 import { autoBackupSupported, runAutoBackup } from "./autoBackup";
 import { migrate } from "./db";
 import { syncReminders } from "./documents";
-import { sweepTempDirs } from "./files";
+import { sweepEmptyPageDirs, sweepTempDirs } from "./files";
 import * as SecureStore from "./secureStore";
 import { cancelAllReminders, setReminderMode } from "./notifications";
 import { syncWidget } from "./widget";
@@ -401,6 +401,7 @@ function Housekeeping({ kind }: { kind: VaultKind }) {
   const db = useSQLiteContext();
   useEffect(() => {
     sweepTempDirs();
+    sweepEmptyPageDirs();
     if (!autoBackupSupported) return;
     const t = setTimeout(() => void runAutoBackup(db, kind).catch(() => undefined), 4000);
     return () => clearTimeout(t);

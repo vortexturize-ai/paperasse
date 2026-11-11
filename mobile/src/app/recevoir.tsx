@@ -75,9 +75,9 @@ export default function ReceiveScreen() {
             ? `${report.created.length} papier${one ? "" : "s"} rangé${one ? "" : "s"} et lu${one ? "" : "s"} sur ton téléphone.`
             : "Je n’ai rien pu ranger."}
         </SpeechBubble>
-        {report.failed.length + report.skipped.length > 0 ? (
+        {report.failed.length + report.skipped.length + report.similar.length > 0 ? (
           <Card flat tone="yellow">
-            {[...report.failed, ...report.skipped].map((f, i) => (
+            {[...report.failed, ...report.skipped, ...report.similar].map((f, i) => (
               <Text key={i} style={[txt.small, { color: tones.yellow.fg }]}>• {f.name} : {f.reason}</Text>
             ))}
           </Card>

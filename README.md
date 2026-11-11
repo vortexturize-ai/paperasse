@@ -68,6 +68,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 - **Ajouter en un geste** : photo, PDF (même scanné), plusieurs fichiers, archive ZIP, ou *Partager vers Paperasse* depuis Mail, WhatsApp ou Fichiers.
 - **Scanner malin** : photo floue, trop sombre ou avec un reflet signalée avant d'enregistrer, feuille recadrée.
 - **Rangé et renommé tout seul** dans 12 dossiers (Travail, Logement, Santé, Impôts, Identité, Banque…).
+- **Pas de doublon** : le même papier ajouté deux fois (même photo, même PDF, ou rephotographié) est repéré, et Paperasse propose de garder l'ancien. Deux factures du même fournisseur ne sont pas confondues : dates, montants et numéros doivent aussi correspondre.
 - **Calendrier administratif** : les dates trouvées dans tes papiers et les grandes échéances de l'année (déclaration de revenus, actualisation France Travail…).
 - **Moments de vie** : déménagement, perte d'emploi, nouveau travail, naissance, mariage ou Pacs, retraite, décès d'un proche. Les démarches dans l'ordre, avec les papiers que tu as déjà.
 - **Dossiers prêts** (location, prêt, titre de séjour, embauche) : ce qui est prêt, ce qui manque, ce qu'**on n'a pas le droit de te demander**, puis un seul PDF avec un **filigrane** sur chaque page (« Uniquement pour la location d'un logement — Agence Martin — 10/11/2026 »).

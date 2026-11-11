@@ -105,6 +105,8 @@ export function preparePdf(uri: string, name: string, size: number | undefined):
  * Renvoie les chemins relatifs à enregistrer.
  */
 export async function storePages(docId: string, pages: PendingPage[]): Promise<{ path: string; mime: string }[]> {
+  // Texte collé : pas de page, donc pas de dossier (il restait vide pour toujours).
+  if (pages.length === 0) return [];
   const dir = new Directory(Paths.document, ROOT, docId);
   dir.create({ intermediates: true, idempotent: true });
   const stored: { path: string; mime: string }[] = [];
@@ -141,11 +143,39 @@ export function deletePages(docId: string, paths: string[]): void {
       // déjà effacé
     }
   }
+  removeEmptyPageDir(docId);
+}
+
+/** Efface le dossier de pages d'un papier s'il ne contient plus rien. */
+export function removeEmptyPageDir(docId: string): void {
   try {
     const dir = new Directory(Paths.document, ROOT, docId);
     if (dir.exists && dir.list().length === 0) dir.delete();
   } catch {
     // dossier occupé ou déjà parti
+  }
+}
+
+/**
+ * Dossiers de pages restés vides (restauration annulée, papier effacé pendant que l'app se fermait…).
+ * Seulement les vides : un dossier qui garde une page peut appartenir à l'autre coffre. Un dossier tout juste
+ * créé (papier en train d'être rangé) est laissé tranquille.
+ */
+export function sweepEmptyPageDirs(now = Date.now()): void {
+  try {
+    const root = new Directory(Paths.document, ROOT);
+    if (!root.exists) return;
+    for (const entry of root.list()) {
+      if (!(entry instanceof Directory)) continue;
+      try {
+        const changed = entry.info().modificationTime ?? 0;
+        if (now - changed > 60_000 && entry.list().length === 0) entry.delete();
+      } catch {
+        // dossier occupé
+      }
+    }
+  } catch {
+    // dossier illisible : rien à faire
   }
 }
 

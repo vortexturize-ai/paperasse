@@ -26,7 +26,7 @@ import {
 } from "../engine/backup";
 import { recoverySheet, type SheetInput } from "../engine/sheet";
 import { refreshReminders } from "./documents";
-import { fileFor } from "./files";
+import { fileFor, removeEmptyPageDir } from "./files";
 import * as SecureStore from "./secureStore";
 import { withLockSuspended } from "./suspend";
 import type { VaultKind } from "./vaultKey";
@@ -255,6 +255,7 @@ export async function restoreBackup(db: SQLiteDatabase, uri: string, code: strin
         } catch {
           // déjà parti
         }
+        removeEmptyPageDir(p.row.document_id);
       }
       throw e;
     }

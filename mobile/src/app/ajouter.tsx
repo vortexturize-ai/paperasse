@@ -11,9 +11,10 @@ import { Screen } from "../components/Screen";
 import { border, colors, fonts, pop } from "../components/theme";
 import { Button, Card, Pill, SpeechBubble, txt } from "../components/ui";
 import { CATEGORIES, CATEGORY_KEYS, type Category } from "../lib/categories";
-import { getSetting } from "../lib/db";
+import { getDocument, getSetting } from "../lib/db";
 import { feedback } from "../lib/feedback";
-import { createDocument } from "../lib/documents";
+import { createDocument, removeDocument } from "../lib/documents";
+import { duplicateText, findDuplicate } from "../lib/duplicates";
 import { PROBLEM_TEXT } from "../engine/scan";
 import { discardPages, discardTemp, prepareImage, preparePdf } from "../lib/files";
 import { inspectPhoto, prepareScan, prepareSystemScanPage, systemScan } from "../lib/scanner";
@@ -226,6 +227,24 @@ export default function AddDocument() {
         title: needsManual ? title : undefined,
         category: needsManual ? category : undefined,
       });
+      // Déjà dans le coffre ? On propose de garder l'ancien (le nouveau est retiré) ou les deux.
+      const dup = await findDuplicate(db, id).catch(() => null);
+      if (dup) {
+        const choice = await dialog.show({
+          ...duplicateText(dup),
+          mood: "reading",
+          buttons: [
+            { label: "Garder l’ancien", variant: "sun" },
+            { label: "Garder les deux", variant: "secondary" },
+          ],
+        });
+        const added = choice === 0 ? await getDocument(db, id) : null;
+        if (added) {
+          await removeDocument(db, added);
+          router.replace(`/document/${dup.doc.id}`);
+          return;
+        }
+      }
       if (analysisError) {
         await dialog.alert({
           title: "Je n’ai pas pu lire ce papier",
