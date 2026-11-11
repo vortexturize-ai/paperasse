@@ -21,6 +21,47 @@ export interface DossierPdfInput {
   date: string;
   pieces: DossierPiece[];
   missing: string[];
+  /** Lignes « En bref » sur la page de garde (une par papier : organisme, date, date limite, montant). */
+  notes?: string[];
+}
+
+/** Motifs proposés pour un dossier remis à un accompagnant ; le filigrane commence toujours par « Uniquement pour ». */
+export const COMPANION_PURPOSES = [
+  "Uniquement pour un accompagnement social",
+  "Uniquement pour une demande d’aide (CCAS, CAF, département)",
+  "Uniquement pour un dossier MDPH",
+  "Uniquement pour un dossier de retraite",
+  "Uniquement pour un rendez-vous France Services",
+] as const;
+
+function frAmount(n: number): string {
+  const [int, dec] = Math.abs(n).toFixed(2).split(".");
+  return `${n < 0 ? "-" : ""}${int.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${dec} €`;
+}
+
+export interface SummaryPaper {
+  title: string;
+  issuer: string | null;
+  docDate: string | null;
+  deadline: string | null;
+  deadlineLabel?: string | null;
+  expiry: string | null;
+  amount: number | null;
+  amountDirection: "a_payer" | "a_recevoir" | "information" | null;
+  done?: boolean;
+}
+
+/** Une ligne de résumé par papier pour la page de garde : « Avis d'impôt — DGFiP, du 15/08/2026 ; 612,00 € à payer avant le 15/12/2026 ». */
+export function summaryLine(p: SummaryPaper): string {
+  const head = [p.issuer?.trim(), p.docDate ? `du ${frDate(p.docDate)}` : null].filter(Boolean).join(", ");
+  const parts: string[] = [];
+  if (p.amount !== null && p.amountDirection === "a_payer") parts.push(`${frAmount(p.amount)} à payer${p.deadline && !p.done ? ` avant le ${frDate(p.deadline)}` : ""}`);
+  else if (p.amount !== null && p.amountDirection === "a_recevoir") parts.push(`${frAmount(p.amount)} à recevoir`);
+  else if (p.amount !== null) parts.push(frAmount(p.amount));
+  if (p.deadline && !p.done && !(p.amount !== null && p.amountDirection === "a_payer")) parts.push(`${p.deadlineLabel?.trim() || "à faire"} avant le ${frDate(p.deadline)}`);
+  if (p.done && p.deadline) parts.push("traité");
+  if (p.expiry) parts.push(`valable jusqu’au ${frDate(p.expiry)}`);
+  return `${p.title.trim()}${head ? ` — ${head}` : ""}${parts.length ? ` ; ${parts.join(" ; ")}` : ""}`;
 }
 
 export interface DossierPdfResult {
@@ -186,6 +227,11 @@ export async function buildDossierPdf(input: DossierPdfInput): Promise<DossierPd
   y -= 10;
   line(`Pièces jointes (${input.pieces.length})`, 14, bold);
   for (const p of input.pieces) line(`• ${p.label} : ${p.title}`, 11, font, INK, 8);
+  if (input.notes?.length) {
+    y -= 8;
+    line("En bref", 14, bold);
+    for (const n of input.notes.slice(0, 60)) line(`• ${n.slice(0, 300)}`, 10, font, INK, 8);
+  }
   if (input.missing.length) {
     y -= 8;
     line("Pièces fournies à part", 14, bold);

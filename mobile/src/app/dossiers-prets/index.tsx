@@ -4,6 +4,7 @@ import type { SQLiteDatabase } from "expo-sqlite";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "../../components/Icon";
 import { Screen } from "../../components/Screen";
+import { tones } from "../../components/theme";
 import { Card, Chip, SpeechBubble, txt } from "../../components/ui";
 import { DOSSIERS, prepareDossier } from "../../engine/dossiers";
 import { todayIso } from "../../lib/text";
@@ -34,6 +35,18 @@ export default function DossiersScreen() {
           </Card>
         </Pressable>
       ))}
+      <Pressable accessibilityRole="button" onPress={() => router.push("/accompagnant")}>
+        <Card tone="purple">
+          <View style={styles.row}>
+            <Icon name="family" size={24} color={tones.purple.fg} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[txt.h3, { color: tones.purple.fg }]}>Dossier pour un accompagnant</Text>
+              <Text style={txt.small}>Assistante sociale, CCAS, France Services : tu choisis les papiers, un PDF filigrané à son nom.</Text>
+            </View>
+            <Icon name="chevron" size={18} color={tones.purple.fg} />
+          </View>
+        </Card>
+      </Pressable>
     </Screen>
   );
 }

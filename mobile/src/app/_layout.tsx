@@ -115,6 +115,7 @@ export default function RootLayout() {
               <Stack.Screen name="code" options={{ headerShown: false, presentation: "modal" }} />
               <Stack.Screen name="sauvegarde" options={{ headerShown: false, presentation: "modal" }} />
               <Stack.Screen name="deuxdoc" options={{ headerShown: false, presentation: "modal" }} />
+              <Stack.Screen name="accompagnant" options={{ headerShown: false, presentation: "modal" }} />
             </Stack>
             <ReminderTaps />
           </DialogProvider>

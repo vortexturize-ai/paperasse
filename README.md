@@ -74,6 +74,7 @@ Le texte est lu sur l'appareil, puis le moteur de Paperasse (écrit pour ça, en
 - **Argent à récupérer**, durées de conservation (« tu peux jeter »), recherche dans tous tes papiers.
 - **Partager un papier** : sa page telle quelle, ou toutes ses pages réunies en un seul PDF.
 - **Famille et aidants** : un profil par proche (« Maman », un enfant…) pour gérer aussi leurs papiers.
+- **Dossier pour un accompagnant** (assistante sociale, CCAS, France Services) : les papiers choisis, les tiens ou ceux d'un proche, en un seul PDF avec le résumé de chacun en première page et un filigrane au nom de la personne.
 
 ## Protéger
 

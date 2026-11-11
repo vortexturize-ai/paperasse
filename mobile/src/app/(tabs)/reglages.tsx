@@ -266,6 +266,14 @@ export default function Settings() {
         {peopleError ? <Text style={[txt.small, { color: colors.red }]}>{peopleError}</Text> : null}
         <Button label="Ajouter ce proche" icon="family" variant="secondary" onPress={() => void addProche()} style={{ marginTop: 8 }} />
       </Card>
+      <Card flat>
+        <Text style={txt.strong}>Dossier pour un accompagnant</Text>
+        <Text style={txt.small}>
+          Assistante sociale, CCAS, France Services : les papiers choisis (les tiens ou ceux d’un proche) en un seul PDF, résumé en
+          première page, filigrane au nom de la personne.
+        </Text>
+        <Button label="Préparer un dossier" icon="folderCheck" variant="secondary" onPress={() => router.push("/accompagnant")} style={{ marginTop: 8 }} />
+      </Card>
 
       <SectionTitle>Sauvegarde</SectionTitle>
       <Card>

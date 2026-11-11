@@ -136,3 +136,38 @@ test("un papier de plusieurs pages partagé en un seul PDF : sans garde ni filig
   assert.equal(safeFileName("..."), "Papier");
   assert.equal(safeFileName("x".repeat(100)).length, 60);
 });
+
+test("dossier pour un accompagnant : résumé « En bref » sur la garde, motifs filigranés, ligne de résumé par papier", async () => {
+  const { COMPANION_PURPOSES, summaryLine } = await import("../src/engine/dossierPdf.ts");
+  for (const p of COMPANION_PURPOSES) assert.match(p, /^Uniquement pour /);
+  assert.equal(
+    summaryLine({ title: "Avis de taxe foncière", issuer: "DGFiP", docDate: "2026-08-15", deadline: "2026-12-15", deadlineLabel: "payer", expiry: null, amount: 1612.5, amountDirection: "a_payer" }),
+    "Avis de taxe foncière — DGFiP, du 15/08/2026 ; 1 612,50 € à payer avant le 15/12/2026",
+  );
+  assert.equal(
+    summaryLine({ title: "Carte d’identité", issuer: null, docDate: null, deadline: null, expiry: "2031-01-10", amount: null, amountDirection: null }),
+    "Carte d’identité ; valable jusqu’au 10/01/2031",
+  );
+  assert.equal(
+    summaryLine({ title: "Courrier CAF", issuer: "CAF", docDate: "2026-11-03", deadline: "2026-11-18", deadlineLabel: "envoyer l’attestation", expiry: null, amount: null, amountDirection: null }),
+    "Courrier CAF — CAF, du 03/11/2026 ; envoyer l’attestation avant le 18/11/2026",
+  );
+  assert.equal(
+    summaryLine({ title: "Courrier CAF", issuer: "CAF", docDate: "2026-11-03", deadline: "2026-11-18", expiry: null, amount: null, amountDirection: null, done: true }),
+    "Courrier CAF — CAF, du 03/11/2026 ; traité",
+  );
+  assert.equal(summaryLine({ title: "Remboursement", issuer: "CPAM", docDate: null, deadline: null, expiry: null, amount: 23.4, amountDirection: "a_recevoir" }), "Remboursement — CPAM ; 23,40 € à recevoir");
+  const r = await buildDossierPdf({
+    title: "Dossier — papiers de Maman",
+    watermark: watermarkText(COMPANION_PURPOSES[0], "Mme Martin", "2026-11-11"),
+    date: "2026-11-11",
+    pieces: [{ label: "Avis d’impôt", title: "Avis 2026", pages: [{ kind: "text", text: "Revenu fiscal de référence : 12 000 €" }] }],
+    missing: [],
+    notes: ["Avis 2026 — DGFiP, du 15/08/2026 ; 612,00 € à payer avant le 15/12/2026"],
+  });
+  const text = extractPdfText(r.bytes).text.replace(/\s+/g, " ");
+  assert.ok(text.includes("En bref"));
+  assert.ok(text.includes("612,00 € à payer avant le 15/12/2026"));
+  assert.ok(text.includes("Uniquement pour un accompagnement social — Mme Martin — 11/11/2026"));
+  assert.ok(!text.includes("Pièces fournies à part"));
+});
