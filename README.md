@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ko-fi.com/paperasse"><img src="https://img.shields.io/badge/Soutenir-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white" alt="Soutenir sur Ko-fi"></a>
+  <a href="https://ko-fi.com/sk8rt"><img src="https://img.shields.io/badge/Soutenir-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white" alt="Soutenir sur Ko-fi"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0-1F3C88" alt="Licence AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/Android-en%20d%C3%A9veloppement-4CC764?logo=android&logoColor=white" alt="Android, en développement">
   <img src="https://img.shields.io/badge/Expo%20SDK-58-000020?logo=expo&logoColor=white" alt="Expo SDK 58">
@@ -133,7 +133,7 @@ Paperasse peut se tromper : vérifie toujours les dates et les montants sur le p
 <details>
 <summary><b>C'est vraiment gratuit ?</b></summary>
 <br>
-Oui, sans publicité et sans abonnement. Le code est libre (AGPL-3.0). Le projet vit des dons sur <a href="https://ko-fi.com/paperasse">Ko-fi</a>.
+Oui, sans publicité et sans abonnement. Le code est libre (AGPL-3.0). Le projet vit des dons sur <a href="https://ko-fi.com/sk8rt">Ko-fi</a>.
 </details>
 
 <details>
@@ -224,10 +224,10 @@ Toutes les aides comptent : signaler un bug, un papier mal compris (anonymisé),
 
 ## Soutenir le projet
 
-Paperasse est gratuit, sans publicité, et le restera. Si l'app t'aide, tu peux soutenir son développement sur **[Ko-fi](https://ko-fi.com/paperasse)**, par un don ponctuel ou mensuel. Les dons servent à la version iPhone, à la publication sur les stores et à de nouvelles langues.
+Paperasse est gratuit, sans publicité, et le restera. Si l'app t'aide, tu peux soutenir son développement sur **[Ko-fi](https://ko-fi.com/sk8rt)**, par un don ponctuel ou mensuel. Les dons servent à la version iPhone, à la publication sur les stores et à de nouvelles langues.
 
 <p align="center">
-  <a href="https://ko-fi.com/paperasse"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Soutenir Paperasse sur Ko-fi"></a>
+  <a href="https://ko-fi.com/sk8rt"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Soutenir Paperasse sur Ko-fi"></a>
 </p>
 
 Sans dépenser un centime :
