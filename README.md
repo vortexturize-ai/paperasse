@@ -238,4 +238,4 @@ Sans dépenser un centime :
 
 ## Licence
 
-[GNU AGPL v3.0](LICENSE) © 2026 vortexturize-ai. Tu peux utiliser, étudier, modifier et redistribuer Paperasse ; toute version modifiée distribuée ou proposée en ligne doit rester libre, sous la même licence.
+[GNU AGPL v3.0](LICENSE) © 2026 ninoelhaj. Tu peux utiliser, étudier, modifier et redistribuer Paperasse ; toute version modifiée distribuée ou proposée en ligne doit rester libre, sous la même licence.
